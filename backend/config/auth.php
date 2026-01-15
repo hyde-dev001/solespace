@@ -48,6 +48,13 @@ return [
             'driver' => 'session',
             'provider' => 'super_admins',
         ],
+
+        // <!-- Shop Owner Guard -->
+        // <!-- Authentication guard for shop owners -->
+        'shop_owner' => [
+            'driver' => 'session',
+            'provider' => 'shop_owners',
+        ],
     ],
 
     /*
@@ -78,6 +85,13 @@ return [
         'super_admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\SuperAdmin::class,
+        ],
+
+        // <!-- Shop Owner Provider -->
+        // <!-- Uses ShopOwner model for authentication -->
+        'shop_owners' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\ShopOwner::class,
         ],
 
         // 'users' => [

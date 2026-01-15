@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('valid_id_path')->nullable()->after('address');
+        Schema::table('shop_owners', function (Blueprint $table) {
+            $table->decimal('monthly_target', 10, 2)->default(100000)->after('status');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('valid_id_path');
+        Schema::table('shop_owners', function (Blueprint $table) {
+            $table->dropColumn('monthly_target');
         });
     }
 };

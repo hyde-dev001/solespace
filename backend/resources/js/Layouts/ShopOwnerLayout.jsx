@@ -1,5 +1,5 @@
 /**
- * Super Admin Layout Component (Complete Version)
+ * Shop Owner Layout Component
  * 
  * Full-featured layout with:
  * - Collapsible sidebar with animations
@@ -21,32 +21,22 @@ function DarkModeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
-      console.log('Initial theme from localStorage:', savedTheme);
       return savedTheme || 'light';
     }
     return 'light';
   });
 
   useEffect(() => {
-    console.log('Theme changed to:', theme);
-    // Save theme to localStorage and apply to DOM
     localStorage.setItem('theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
-      console.log('Dark mode activated');
     } else {
       document.documentElement.classList.remove('dark');
-      console.log('Light mode activated');
     }
   }, [theme]);
 
   const toggleTheme = () => {
-    console.log('Toggle theme clicked, current:', theme);
-    setTheme((prevTheme) => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      console.log('Switching to:', newTheme);
-      return newTheme;
-    });
+    setTheme((prevTheme) => prevTheme === 'light' ? 'dark' : 'light');
   };
 
   const isDark = theme === 'dark';
@@ -65,11 +55,11 @@ function useDarkMode() {
 }
 
 // Main Layout Component
-function SuperAdminLayout({ children, auth }) {
+function ShopOwnerLayout({ children, auth }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [openSubmenu, setOpenSubmenu] = useState('admin');
+  const [openSubmenu, setOpenSubmenu] = useState('shop');
   const { isDark, toggleTheme } = useDarkMode();
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -101,7 +91,7 @@ function SuperAdminLayout({ children, auth }) {
     });
 
     if (result.isConfirmed) {
-      router.post('/admin/logout', {}, {
+      router.post('/shop-owner/logout', {}, {
         onSuccess: () => {
           Swal.fire({
             icon: 'success',
@@ -125,21 +115,16 @@ function SuperAdminLayout({ children, auth }) {
 
   const menuItems = [
     {
-      name: 'Admin',
+      name: 'Shop',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       ),
       subItems: [
-        { name: 'Shop Registrations', path: '/admin/shop-registrations' },
-        { name: 'Registered Shops', path: '/admin/registered-shops' },
-        { name: 'Flagged Accounts', path: '/admin/flagged-accounts' },
-        { name: 'Data Reports', path: '/admin/data-reports' },
-        { name: 'Notifications', path: '/admin/notifications' },
-        { name: 'User Management', path: '/admin/user-management' },
-        { name: 'Admin Management', path: '/admin/admin-management' },
-        { name: 'System Monitoring', path: '/admin/system-monitoring' },
+        { name: 'Dashboard', path: '/shop-owner/dashboard' },
+        { name: 'Calendar', path: '/shop-owner/calendar' },
+        { name: 'Access Control', path: '/shop-owner/access-control' },
       ],
     },
   ];
@@ -246,7 +231,6 @@ function SuperAdminLayout({ children, auth }) {
                       <Link
                         key={subItem.path}
                         href={subItem.path}
-                        onClick={() => console.log('Navigating to:', subItem.path, subItem.name)}
                         className={`block px-4 py-2.5 text-sm rounded-lg transition-all duration-200 ${
                           isActive(subItem.path)
                             ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border-l-2 border-blue-600 dark:border-blue-400 pl-3'
@@ -262,8 +246,6 @@ function SuperAdminLayout({ children, auth }) {
             </div>
           ))}
         </nav>
-
-
       </aside>
 
       {/* Main Content */}
@@ -285,15 +267,10 @@ function SuperAdminLayout({ children, auth }) {
             <div className="hidden lg:block">
               <div className="space-y-1">
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {currentPath === '/admin/shop-registrations' && 'Shop Registrations'}
-                  {currentPath === '/admin/registered-shops' && 'Registered Shops'}
-                  {currentPath === '/admin/flagged-accounts' && 'Flagged Accounts'}
-                  {currentPath === '/admin/data-reports' && 'Data Reports'}
-                  {currentPath === '/admin/notifications' && 'Notifications'}
-                  {currentPath === '/admin/user-management' && 'User Management'}
-                  {currentPath === '/admin/system-monitoring' && 'System Monitoring'}
-                  {currentPath === '/admin/profile' && 'Profile'}
-                  {!currentPath.startsWith('/admin/') && 'Admin Dashboard'}
+                  {currentPath === '/shop-owner/dashboard' && 'Dashboard'}
+                  {currentPath === '/shop-owner/calendar' && 'Calendar'}
+                  {currentPath === '/shop-owner/access-control' && 'Access Control'}
+                  {!currentPath.startsWith('/shop-owner/') && 'Shop Owner Dashboard'}
                 </h1>
               </div>
             </div>
@@ -341,14 +318,14 @@ function SuperAdminLayout({ children, auth }) {
               >
                 <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-white font-semibold text-sm">
-                    {auth?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                    {auth?.shop_owner?.business_name?.charAt(0).toUpperCase() || 'S'}
                   </span>
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {auth?.user?.name || 'Super Admin'}
+                    {auth?.shop_owner?.business_name || 'Shop Owner'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Shop Owner</p>
                 </div>
                 <svg className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -360,14 +337,14 @@ function SuperAdminLayout({ children, auth }) {
                 <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 animate-fade-in">
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {auth?.user?.name || 'Super Admin'}
+                      {auth?.shop_owner?.business_name || 'Shop Owner'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                      {auth?.user?.email || 'admin@thesis.com'}
+                      {auth?.shop_owner?.email || 'owner@shop.com'}
                     </p>
                   </div>
                   <Link
-                    href="/admin/profile"
+                    href="/shop-owner/profile"
                     className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -391,7 +368,7 @@ function SuperAdminLayout({ children, auth }) {
         </header>
 
         {/* Page Content */}
-        <main className="transition-colors duration-200">
+        <main className="p-6 lg:p-8 transition-colors duration-200">
           {children}
         </main>
       </div>
@@ -408,12 +385,12 @@ function SuperAdminLayout({ children, auth }) {
 }
 
 // Export with DarkMode provider wrapper
-export default function SuperAdminLayoutWithProviders({ children, auth }) {
+export default function ShopOwnerLayoutWithProviders({ children, auth }) {
   return (
     <DarkModeProvider>
-      <SuperAdminLayout auth={auth}>
+      <ShopOwnerLayout auth={auth}>
         {children}
-      </SuperAdminLayout>
+      </ShopOwnerLayout>
     </DarkModeProvider>
   );
 }

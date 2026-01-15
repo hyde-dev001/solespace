@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 /**
  * ShopOwner Model
@@ -21,9 +22,9 @@ use Illuminate\Database\Eloquent\Model;
  * 2. approved - Admin approved, shop owner can access system
  * 3. rejected - Admin rejected, may include rejection_reason
  */
-class ShopOwner extends Model
+class ShopOwner extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -37,6 +38,7 @@ class ShopOwner extends Model
         'last_name',            // Shop owner's last name
         'email',                // Contact email (must be unique)
         'phone',                // Contact phone number
+        'password',             // Hashed password for authentication
         'business_name',        // Registered business name
         'business_address',     // Physical business location
         'business_type',        // Type: retail, repair, or both
@@ -44,6 +46,16 @@ class ShopOwner extends Model
         'operating_hours',      // JSON field storing weekly schedule
         'status',               // pending, approved, or rejected
         'rejection_reason',     // Optional reason if rejected
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     /**
@@ -56,6 +68,8 @@ class ShopOwner extends Model
      */
     protected $casts = [
         'operating_hours' => 'array',  // Auto JSON encode/decode
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
     /**

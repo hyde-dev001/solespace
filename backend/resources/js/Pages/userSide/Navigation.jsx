@@ -3,10 +3,12 @@ import { Link, usePage } from '@inertiajs/react';
 
 const Navigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
   const [underlineLeft, setUnderlineLeft] = useState(0);
   const [underlineWidth, setUnderlineWidth] = useState(0);
   const { url } = usePage();
   const navRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const navItems = [
     { path: '/', label: 'Home' },
@@ -34,6 +36,16 @@ const Navigation = () => {
       }
     }
   }, [activeIndex]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setLoginDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <nav className="bg-white border-b border-black sticky top-0 z-50">
@@ -63,14 +75,39 @@ const Navigation = () => {
             />
           </div>
           <div className="flex items-center space-x-4">
-            <button
-              className="text-black p-2 hover:opacity-70 transition-opacity"
-              aria-label="User account"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </button>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setLoginDropdownOpen(!loginDropdownOpen)}
+                className="text-black p-2 hover:opacity-70 transition-opacity"
+                aria-label="User account"
+                aria-expanded={loginDropdownOpen ? "true" : "false"}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
+
+              {loginDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="py-2">
+                    <Link
+                      href="/login"
+                      className="block px-4 py-3 text-sm text-black uppercase tracking-wider hover:bg-gray-100 transition-colors font-medium"
+                      onClick={() => setLoginDropdownOpen(false)}
+                    >
+                      Customer Login
+                    </Link>
+                    <Link
+                      href="/shop-owner/login"
+                      className="block px-4 py-3 text-sm text-black uppercase tracking-wider hover:bg-gray-100 transition-colors font-medium border-t border-black"
+                      onClick={() => setLoginDropdownOpen(false)}
+                    >
+                      Shop Owner Login
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button
               className="text-black p-2 hover:opacity-70 transition-opacity relative"
@@ -107,8 +144,12 @@ const Navigation = () => {
             <Link href="/repair-services" className="block text-black text-sm font-medium uppercase tracking-wider">Repair</Link>
             <Link href="/services" className="block text-black text-sm font-medium uppercase tracking-wider">Services</Link>
             <Link href="/contact" className="block text-black text-sm font-medium uppercase tracking-wider">Contact</Link>
-            <Link href="/login" className="block text-black text-sm font-medium uppercase tracking-wider">Login</Link>
-            <Link href="/register" className="block text-black text-sm font-medium uppercase tracking-wider">Register</Link>
+            <div className="border-t border-black pt-4">
+              <p className="text-xs text-gray-600 uppercase tracking-wider mb-2 font-medium">Login As</p>
+              <Link href="/login" className="block text-black text-sm font-medium uppercase tracking-wider pl-4">Customer</Link>
+              <Link href="/shop-owner/login" className="block text-black text-sm font-medium uppercase tracking-wider pl-4 mt-2">Shop Owner</Link>
+            </div>
+            <Link href="/register" className="block text-black text-sm font-medium uppercase tracking-wider border-t border-black pt-4">Register</Link>
           </div>
         )}
       </div>
