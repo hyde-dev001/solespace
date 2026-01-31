@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Finance\Account;
 use App\Models\Finance\JournalLine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class FinancialReportController extends Controller
@@ -16,7 +17,14 @@ class FinancialReportController extends Controller
     public function balanceSheet(Request $request)
     {
         $date = $request->query('as_of_date', now()->toDateString());
-        $shopOwnerId = auth()->user()->shop_owner_id ?? auth()->user()->id;
+        
+        // Get authenticated user via Sanctum
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
 
         // Get accounts grouped by type with balances as of the date
         $assets = $this->getAccountsByType(['Asset'], $date, $shopOwnerId);
@@ -57,7 +65,14 @@ class FinancialReportController extends Controller
     {
         $fromDate = $request->query('from_date', now()->startOfYear()->toDateString());
         $toDate = $request->query('to_date', now()->toDateString());
-        $shopOwnerId = auth()->user()->shop_owner_id ?? auth()->user()->id;
+        
+        // Get authenticated user via Sanctum
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
 
         $revenues = $this->getAccountsByTypePeriod(['Revenue'], $fromDate, $toDate, $shopOwnerId);
         $expenses = $this->getAccountsByTypePeriod(['Expense'], $fromDate, $toDate, $shopOwnerId);
@@ -92,7 +107,14 @@ class FinancialReportController extends Controller
     public function trialBalance(Request $request)
     {
         $date = $request->query('as_of_date', now()->toDateString());
-        $shopOwnerId = auth()->user()->shop_owner_id ?? auth()->user()->id;
+        
+        // Get authenticated user via Sanctum
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
 
         $accounts = Account::where('shop_owner_id', $shopOwnerId)
             ->where('is_active', true)
@@ -134,7 +156,14 @@ class FinancialReportController extends Controller
     public function arAging(Request $request)
     {
         $date = $request->query('as_of_date', now()->toDateString());
-        $shopOwnerId = auth()->user()->shop_owner_id ?? auth()->user()->id;
+        
+        // Get authenticated user via Sanctum
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
 
         // Get AR account (Accounts Receivable asset)
         $arAccount = Account::where('shop_owner_id', $shopOwnerId)
@@ -175,7 +204,14 @@ class FinancialReportController extends Controller
     public function apAging(Request $request)
     {
         $date = $request->query('as_of_date', now()->toDateString());
-        $shopOwnerId = auth()->user()->shop_owner_id ?? auth()->user()->id;
+        
+        // Get authenticated user via Sanctum
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
 
         // Get AP account (Accounts Payable liability)
         $apAccount = Account::where('shop_owner_id', $shopOwnerId)

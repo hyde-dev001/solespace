@@ -324,7 +324,7 @@ const Invoice: React.FC = () => {
     const draft = invoices.filter((inv) => inv.status === "draft").length;
     const totalRevenue = invoices
       .filter((inv) => inv.status === "paid" || inv.status === "posted")
-      .reduce((sum, inv) => sum + inv.total, 0);
+      .reduce((sum, inv) => sum + (typeof inv.total === 'string' ? parseFloat(inv.total) : inv.total), 0);
 
     return {
       total,

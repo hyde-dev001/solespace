@@ -573,7 +573,7 @@ const FinancialReportingLegacy: React.FC = () => {
   const fetchARaging = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/api/finance/reports/ar-aging?as_of_date=${asOfDate}`, { skipAuth: true });
+      const response = await api.get(`/api/finance/reports/ar-aging?as_of_date=${asOfDate}`);
       if (response.ok) {
         setArAgingData(response.data);
       } else {
@@ -589,7 +589,7 @@ const FinancialReportingLegacy: React.FC = () => {
   const fetchAPaging = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/api/finance/reports/ap-aging?as_of_date=${asOfDate}`, { skipAuth: true });
+      const response = await api.get(`/api/finance/reports/ap-aging?as_of_date=${asOfDate}`);
       if (response.ok) {
         setApAgingData(response.data);
       } else {

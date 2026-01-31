@@ -15,6 +15,20 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:web');
 
+// Debug endpoint to check current user
+Route::get('/debug/me', function() {
+    $user = Auth::guard('web')->user() ?? Auth::guard('user')->user();
+    if (!$user) {
+        return response()->json(['error' => 'Not authenticated']);
+    }
+    return response()->json([
+        'id' => $user->id,
+        'email' => $user->email,
+        'role' => $user->role,
+        'shop_owner_id' => $user->shop_owner_id,
+    ]);
+})->middleware('web');
+
 Route::group(['middleware' => ['web', 'auth:user']], function () {
     /**
      * HR Module Routes
@@ -23,32 +37,6 @@ Route::group(['middleware' => ['web', 'auth:user']], function () {
     Route::middleware(['role:HR,shop_owner', 'shop.isolation'])->prefix('hr')->group(function () {
         Route::apiResource('employees', EmployeeController::class);
         Route::get('statistics', [EmployeeController::class, 'statistics'])->name('employees.statistics');
-    });
-
-    /**
-     * Finance Module Routes
-     * Financial Reporting & Analysis
-     */
-    Route::middleware(['role:FINANCE_STAFF,FINANCE_MANAGER', 'shop.isolation'])->prefix('finance')->group(function () {
-        Route::apiResource('budgets', BudgetController::class);
-
-        Route::prefix('reports')->group(function () {
-            Route::get('balance-sheet', [FinancialReportController::class, 'balanceSheet']);
-            Route::get('profit-loss', [FinancialReportController::class, 'profitLoss']);
-            Route::get('trial-balance', [FinancialReportController::class, 'trialBalance']);
-            Route::get('ar-aging', [FinancialReportController::class, 'arAging']);
-            Route::get('ap-aging', [FinancialReportController::class, 'apAging']);
-        });
-
-        // Bank Reconciliation routes
-        Route::prefix('reconciliation')->group(function () {
-            Route::get('transactions', [ReconciliationController::class, 'getTransactions']);
-            Route::post('/', [ReconciliationController::class, 'store']);
-            Route::post('auto-match', [ReconciliationController::class, 'autoMatch']);
-            Route::post('batch-reconcile', [ReconciliationController::class, 'batchReconcile']);
-            Route::get('history', [ReconciliationController::class, 'history']);
-            Route::delete('{id}/unmatch', [ReconciliationController::class, 'unmatch']);
-        });
     });
 
     /**
@@ -68,9 +56,35 @@ Route::prefix('finance/public')->group(function () {
 
 /**
  * Finance Module API Routes
- * Protected by auth:user and role-based middleware
+ * Protected by session-based authentication and role-based middleware
+ * Allows: FINANCE_STAFF, FINANCE_MANAGER, MANAGER, STAFF roles
  */
-Route::middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER', 'shop.isolation'])->prefix('finance')->group(function () {
+Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,MANAGER,STAFF', 'shop.isolation'])->prefix('finance')->group(function () {
+    // Financial Reports
+    Route::prefix('reports')->group(function () {
+        Route::get('balance-sheet', [FinancialReportController::class, 'balanceSheet']);
+        Route::get('profit-loss', [FinancialReportController::class, 'profitLoss']);
+        Route::get('trial-balance', [FinancialReportController::class, 'trialBalance']);
+        Route::get('ar-aging', [FinancialReportController::class, 'arAging']);
+        Route::get('ap-aging', [FinancialReportController::class, 'apAging']);
+    });
+
+    // Bank Reconciliation routes
+    Route::prefix('reconciliation')->group(function () {
+        Route::get('transactions', [ReconciliationController::class, 'getTransactions']);
+        Route::post('/', [ReconciliationController::class, 'store']);
+        Route::post('auto-match', [ReconciliationController::class, 'autoMatch']);
+        Route::post('batch-reconcile', [ReconciliationController::class, 'batchReconcile']);
+        Route::get('history', [ReconciliationController::class, 'history']);
+        Route::delete('{id}/unmatch', [ReconciliationController::class, 'unmatch']);
+    });
+    
+    // Budgets
+    Route::apiResource('budgets', BudgetController::class);
+    Route::get('budgets/variance', [BudgetController::class, 'variance']);
+    Route::get('budgets/utilization', [BudgetController::class, 'utilization']);
+    Route::post('budgets/{budget}/sync-actuals', [BudgetController::class, 'syncActuals']);
+    
     // Chart of Accounts
     Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
     Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
@@ -110,11 +124,6 @@ Route::middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER', 'shop.isol
     Route::post('expenses/{id}/receipt', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'uploadReceipt']);
     Route::get('expenses/{id}/receipt/download', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'downloadReceipt']);
     Route::delete('expenses/{id}/receipt', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'deleteReceipt']);
-    
-    // Budgets - Advanced features
-    Route::get('budgets/variance', [BudgetController::class, 'variance']);
-    Route::get('budgets/utilization', [BudgetController::class, 'utilization']);
-    Route::post('budgets/{budget}/sync-actuals', [BudgetController::class, 'syncActuals']);
     
     // Tax Rates Management
     Route::get('tax-rates', [\App\Http\Controllers\Api\Finance\TaxRateController::class, 'index']);
