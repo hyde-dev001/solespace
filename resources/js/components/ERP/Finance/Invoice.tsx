@@ -862,7 +862,7 @@ const Invoice: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Journal Entry Link */}
+                {/* REMOVED: Journal Entry Link - Feature disabled for SME use case
                 {selectedInvoice.journal_entry_id && (
                   <div className="flex justify-center mb-5">
                     <a
@@ -876,6 +876,7 @@ const Invoice: React.FC = () => {
                     </a>
                   </div>
                 )}
+                */}
 
                 {/* Invoice Details Grid */}
                 <div className="grid grid-cols-2 gap-4 mb-5 pb-4 border-b border-gray-200 dark:border-gray-700">

@@ -46,11 +46,25 @@ const Products: React.FC<Props> = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        sort_by: sortBy,
-        page: currentPage.toString(),
-        ...(searchQuery && { search: searchQuery })
-      });
+      const params = new URLSearchParams();
+      
+      // Sorting (use - prefix for descending)
+      if (sortBy === 'created_at') {
+        params.append('sort', '-created_at');
+      } else if (sortBy === 'price') {
+        params.append('sort', 'price');
+      } else if (sortBy === 'popular') {
+        params.append('sort', '-sales_count');
+      }
+      
+      // Pagination
+      params.append('page', currentPage.toString());
+      
+      // Search filter
+      if (searchQuery) {
+        params.append('filter[search_all]', searchQuery);
+      }
+      
       const response = await fetch(`/api/products/?${params.toString()}`, {
         headers: { 'Accept': 'application/json' }
       });

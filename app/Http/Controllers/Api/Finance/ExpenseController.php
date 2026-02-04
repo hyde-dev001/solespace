@@ -13,36 +13,27 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $q = Expense::query();
+        $expenses = QueryBuilder::for(Expense::class)
+            ->allowedFilters([
+                'status',
+                'category',
+                'vendor',
+                AllowedFilter::partial('search', 'reference'),
+                AllowedFilter::scope('date_from'),
+                AllowedFilter::scope('date_to'),
+                AllowedFilter::scope('search_all'),
+            ])
+            ->allowedSorts(['date', 'amount', 'created_at', 'reference'])
+            ->defaultSort('-date')
+            ->paginate($request->get('per_page', 15));
 
-        if ($request->filled('status')) {
-            $q->where('status', $request->status);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $q->where(function ($w) use ($search) {
-                $w->where('reference', 'like', "%$search%")
-                  ->orWhere('category', 'like', "%$search%")
-                  ->orWhere('vendor', 'like', "%$search%")
-                  ->orWhere('description', 'like', "%$search%");
-            });
-        }
-
-        if ($request->filled('date_from')) {
-            $q->where('date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $q->where('date', '<=', $request->date_to);
-        }
-
-        $expenses = $q->orderBy('date', 'desc')->paginate($request->get('per_page', 15));
         return response()->json($expenses);
     }
 

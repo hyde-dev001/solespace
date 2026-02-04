@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import Navigation from './Navigation';
 import Swal from 'sweetalert2';
@@ -27,6 +27,8 @@ const Checkout: React.FC = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [payLink, setPayLink] = useState<string>('');
+  const [qtyUpdating, setQtyUpdating] = useState<Record<string, boolean>>({});
+  const qtyUpdatingRef = useRef<Record<string, boolean>>({});
   
   // Customer information
   const [customerName, setCustomerName] = useState('');
@@ -157,10 +159,19 @@ const Checkout: React.FC = () => {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
+    if (qtyUpdatingRef.current[id]) return;
+
     if (item.stock_quantity !== undefined && item.qty >= item.stock_quantity) {
-      alert(`Cannot add more. Only ${item.stock_quantity} items in stock.`);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Stock limit reached',
+        text: `Cannot add more. Only ${item.stock_quantity} items in stock.`,
+      });
       return;
     }
+
+    qtyUpdatingRef.current[id] = true;
+    setQtyUpdating(prev => ({ ...prev, [id]: true }));
 
     if (user) {
       // Update via API
@@ -173,27 +184,39 @@ const Checkout: React.FC = () => {
         window.dispatchEvent(new CustomEvent('cart:added'));
       } catch (error: any) {
         const errorMsg = error.response?.data?.error || 'Failed to update cart';
-        alert(errorMsg);
+        Swal.fire({
+          icon: 'error',
+          title: 'Unable to update cart',
+          text: errorMsg,
+        });
         console.error('Failed to update cart:', error);
         // Refresh cart to get correct quantities
         loadCart();
+      } finally {
+        qtyUpdatingRef.current[id] = false;
+        setQtyUpdating(prev => ({ ...prev, [id]: false }));
       }
     } else {
       // Update localStorage
-      setItems((prev) => {
-        const next = prev.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i);
-        try {
-          const raw = localStorage.getItem('ss_cart');
-          const cart = raw ? JSON.parse(raw) : [];
-          const cartItem = cart.find((c: any) => String(c.id) === id);
-          if (cartItem) {
-            cartItem.qty = (cartItem.qty || 0) + 1;
-          }
-          localStorage.setItem('ss_cart', JSON.stringify(cart));
-          window.dispatchEvent(new CustomEvent('cart:added'));
-        } catch (e) {}
-        return next;
-      });
+      try {
+        setItems((prev) => {
+          const next = prev.map(i => i.id === id ? { ...i, qty: i.qty + 1 } : i);
+          try {
+            const raw = localStorage.getItem('ss_cart');
+            const cart = raw ? JSON.parse(raw) : [];
+            const cartItem = cart.find((c: any) => String(c.id) === id);
+            if (cartItem) {
+              cartItem.qty = (cartItem.qty || 0) + 1;
+            }
+            localStorage.setItem('ss_cart', JSON.stringify(cart));
+            window.dispatchEvent(new CustomEvent('cart:added'));
+          } catch (e) {}
+          return next;
+        });
+      } finally {
+        qtyUpdatingRef.current[id] = false;
+        setQtyUpdating(prev => ({ ...prev, [id]: false }));
+      }
     }
   };
 
@@ -472,8 +495,8 @@ const Checkout: React.FC = () => {
                           <div className="px-5 py-2 text-sm text-black">{item.qty}</div>
                           <button 
                             onClick={() => increment(item.id)} 
-                            disabled={item.stock_quantity !== undefined && item.qty >= item.stock_quantity}
-                            className={`px-3 py-2 text-sm ${item.stock_quantity !== undefined && item.qty >= item.stock_quantity ? 'text-gray-400 cursor-not-allowed' : 'text-black'}`}
+                            disabled={qtyUpdating[item.id] || (item.stock_quantity !== undefined && item.qty >= item.stock_quantity)}
+                            className={`px-3 py-2 text-sm ${(qtyUpdating[item.id] || (item.stock_quantity !== undefined && item.qty >= item.stock_quantity)) ? 'text-gray-400 cursor-not-allowed' : 'text-black'}`}
                           >+</button>
                         </div>
                         {item.stock_quantity !== undefined && item.qty >= item.stock_quantity && (

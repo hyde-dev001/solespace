@@ -19,7 +19,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -117,7 +117,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -143,7 +143,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -183,7 +183,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -231,7 +231,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -306,7 +306,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -385,7 +385,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -437,7 +437,7 @@ class AuditLogController extends Controller
     {
         // Authorization check
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner'])) {
+        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

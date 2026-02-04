@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class ProductController extends Controller
 {
@@ -19,43 +21,18 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Product::where('is_active', true)
-                ->with('shopOwner:id,first_name,last_name,business_name');
-
-            // Filter by category
-            if ($request->has('category') && $request->category) {
-                $query->where('category', $request->category);
-            }
-
-            // Filter by shop
-            if ($request->has('shop_id') && $request->shop_id) {
-                $query->where('shop_owner_id', $request->shop_id);
-            }
-
-            // Search
-            if ($request->has('search') && $request->search) {
-                $query->where(function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                      ->orWhere('description', 'like', '%' . $request->search . '%')
-                      ->orWhere('brand', 'like', '%' . $request->search . '%');
-                });
-            }
-
-            // Sorting
-            $sortBy = $request->get('sort_by', 'created_at');
-            $sortOrder = $request->get('sort_order', 'desc');
-            
-            if ($sortBy === 'price') {
-                $query->orderBy('price', $sortOrder);
-            } elseif ($sortBy === 'name') {
-                $query->orderBy('name', $sortOrder);
-            } elseif ($sortBy === 'popular') {
-                $query->orderBy('sales_count', 'desc');
-            } else {
-                $query->orderBy('created_at', $sortOrder);
-            }
-
-            $products = $query->paginate(12);
+            $products = QueryBuilder::for(Product::class)
+                ->allowedFilters([
+                    'category',
+                    AllowedFilter::exact('shop_id', 'shop_owner_id'),
+                    AllowedFilter::partial('search', 'name'),
+                    AllowedFilter::scope('search_all'),
+                ])
+                ->allowedSorts(['price', 'name', 'created_at', 'sales_count'])
+                ->defaultSort('-created_at')
+                ->where('is_active', true)
+                ->with('shopOwner:id,first_name,last_name,business_name')
+                ->paginate($request->get('per_page', 12));
 
             return response()->json([
                 'success' => true,
@@ -117,13 +94,15 @@ class ProductController extends Controller
             $query = Product::where('shop_owner_id', $user->id);
 
             // Include inactive products for shop owner
-            if ($request->has('include_inactive') && $request->include_inactive) {
-                // Show all products
-            } else {
+            if (!$request->get('include_inactive')) {
                 $query->where('is_active', true);
             }
 
-            $products = $query->orderBy('created_at', 'desc')->get();
+            $products = QueryBuilder::for($query)
+                ->allowedFilters(['category', 'is_active'])
+                ->allowedSorts(['name', 'price', 'created_at', 'stock_quantity'])
+                ->defaultSort('-created_at')
+                ->get();
 
             return response()->json([
                 'success' => true,

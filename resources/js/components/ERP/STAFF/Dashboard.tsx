@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { Head, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayoutERP from '../../../layout/AppLayout_ERP';
 
 interface StaffDashboardStats {
@@ -117,6 +118,54 @@ const MetricCard = ({
 
 export default function StaffDashboard() {
     const { auth } = usePage().props as any;
+    const [clockedIn, setClockedIn] = useState(false);
+    const [loginTime, setLoginTime] = useState<string | null>(null);
+    const [logoutTime, setLogoutTime] = useState<string | null>(null);
+    const [lunchBreakTime, setLunchBreakTime] = useState<string | null>(null);
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+
+    const handleClockIn = () => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLoginTime(timeString);
+        setClockedIn(true);
+        setLogoutTime(null);
+    };
+
+    const handleClockOut = () => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLogoutTime(timeString);
+        setClockedIn(false);
+    };
+
+    const handleLunchBreak = () => {
+        if (!clockedIn) return;
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLunchBreakTime(timeString);
+    };
+
+    const computeTotalHours = (start: string | null, end: string | null) => {
+        if (!start || !end) return '--';
+        const parseTime = (value: string) => {
+            const match = value.match(/^(\d{1,2}):(\d{2}):(\d{2})\s?(AM|PM)$/i);
+            if (!match) return null;
+            const hours = parseInt(match[1], 10);
+            const minutes = parseInt(match[2], 10);
+            const seconds = parseInt(match[3], 10);
+            const period = match[4].toUpperCase();
+            const normalizedHours = (hours % 12) + (period === 'PM' ? 12 : 0);
+            return normalizedHours * 3600 + minutes * 60 + seconds;
+        };
+
+        const startSeconds = parseTime(start);
+        const endSeconds = parseTime(end);
+        if (startSeconds === null || endSeconds === null) return '--';
+        const diffSeconds = Math.max(0, endSeconds - startSeconds);
+        const hours = diffSeconds / 3600;
+        return `${hours.toFixed(2)} hrs`;
+    };
 
     const stats: StaffDashboardStats = {
         activeJobs: 5,
@@ -170,6 +219,180 @@ export default function StaffDashboard() {
                     </p>
                 </div>
 
+                {/* Clock In/Out Section */}
+                <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-8">
+                    <div className="p-8">
+                        <div className="relative flex items-center justify-center mb-6">
+                            <div className="text-center">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">CURRENT TIME</p>
+                                <h2 className="text-5xl font-bold text-gray-900 dark:text-white">
+                                    {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                                </h2>
+                                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowAttendanceModal(true)}
+                                className="absolute right-0 top-0 px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all duration-300 active:scale-95 shadow-lg whitespace-nowrap"
+                            >
+                                View Attendance
+                            </button>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex justify-center mb-6">
+                            <div className={`px-4 py-2 rounded-full font-semibold text-sm ${
+                                clockedIn 
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                                {clockedIn ? '✓ CLOCKED IN' : '● CLOCKED OUT'}
+                            </div>
+                        </div>
+
+                        {/* Clock In/Out Buttons */}
+                        <div className="flex flex-wrap gap-4 justify-center mb-8">
+                            <button
+                                onClick={handleClockIn}
+                                disabled={clockedIn}
+                                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                                    clockedIn
+                                        ? 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
+                                        : 'bg-green-500 text-white hover:bg-green-600 active:scale-95 shadow-lg'
+                                }`}
+                            >
+                                Clock In
+                            </button>
+                            {clockedIn && !lunchBreakTime && (
+                                <button
+                                    onClick={handleLunchBreak}
+                                    className="px-8 py-3 rounded-full font-semibold transition-all duration-300 bg-yellow-500 text-white hover:bg-yellow-600 active:scale-95 shadow-lg"
+                                >
+                                    Lunch Break
+                                </button>
+                            )}
+                            <button
+                                onClick={handleClockOut}
+                                disabled={!clockedIn}
+                                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                                    !clockedIn
+                                        ? 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
+                                        : 'bg-red-500 text-white hover:bg-red-600 active:scale-95 shadow-lg'
+                                }`}
+                            >
+                                Clock Out
+                            </button>
+                        </div>
+
+                        {/* Time Summary */}
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                                <div className="flex items-center justify-center mb-2">
+                                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                                    </svg>
+                                </div>
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Login Time</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{loginTime || '-- : -- : --'}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                                <div className="flex items-center justify-center mb-2">
+                                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                                </svg>
+                                </div>
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Lunch Break</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{lunchBreakTime || '-- : -- : --'}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                                <div className="flex items-center justify-center mb-2">
+                                    <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                                    </svg>
+                                </div>
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Logout Time</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{logoutTime || '-- : -- : --'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Attendance Modal */}
+                {showAttendanceModal && (
+                    <div
+                        className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999] p-4"
+                        style={{ backdropFilter: 'blur(10px)' }}
+                    >
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-slate-700">
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Attendance History</h2>
+                                <button
+                                    onClick={() => setShowAttendanceModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="px-6 py-5 flex-1 overflow-hidden">
+                                <div className="h-full overflow-auto rounded-lg border border-gray-200 dark:border-slate-700">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50 dark:bg-slate-800 sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Date</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Time In</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Time Out</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Total Hours</th>
+                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                                            {loginTime || logoutTime ? (
+                                                <tr className="hover:bg-gray-50 dark:hover:bg-slate-800/70">
+                                                    <td className="px-4 py-3 text-gray-900 dark:text-white">
+                                                        {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{loginTime || '--'}</td>
+                                                    <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{logoutTime || '--'}</td>
+                                                    <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
+                                                        {computeTotalHours(loginTime, logoutTime)}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                            {clockedIn ? 'Active' : 'Completed'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={5} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                                                        No attendance records yet
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 flex justify-end">
+                                <button
+                                    onClick={() => setShowAttendanceModal(false)}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-900 dark:text-white rounded-lg font-medium transition-all duration-200 text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     {metrics.map((metric) => (
@@ -184,102 +407,6 @@ export default function StaffDashboard() {
                             description={metric.description}
                         />
                     ))}
-                </div>
-
-                {/* Recent Jobs */}
-                <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Jobs</h2>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Job Details</th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Customer</th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Service Type</th>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0">
-                                                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                                                    <TaskIconSvg className="w-6 h-6 text-blue-600 dark:text-blue-300" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900 dark:text-white">Shoe Repair</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">In Progress</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-900 dark:text-white font-medium">Sarah Johnson</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Nike Shoes</p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Repair & Restoration</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Active</span>
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0">
-                                                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                                                    <TaskIconSvg className="w-6 h-6 text-green-600 dark:text-green-300" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900 dark:text-white">Cleaning Service</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-900 dark:text-white font-medium">John Smith</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Sneakers</p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Cleaning & Care</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Done</span>
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="flex-shrink-0">
-                                                <div className="h-10 w-10 rounded-lg bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-                                                    <AlertIconSvg className="w-6 h-6 text-yellow-600 dark:text-yellow-300" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-gray-900 dark:text-white">Heel Replacement</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">Pending</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-900 dark:text-white font-medium">Mary Davis</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">Heels</p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">Replacement Parts</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">Pending</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </AppLayoutERP>

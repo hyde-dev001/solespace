@@ -144,34 +144,29 @@ const navItems: NavItem[] = [
     route: "erp.hr",
     params: { section: "training" },
   },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+      </svg>
+    ),
+    name: "Audit Logs",
+    route: "erp.hr.audit-logs",
+  },
 ];
 
 const financeItems: NavItem[] = [
+  // REMOVED: Enterprise features not needed for SMEs
+  // Chart of Accounts - System auto-creates accounts
+  // Journal Entries - Invoices/expenses auto-post behind the scenes
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="18" height="18" rx="4" ry="4"></rect>
-        <path d="M7 15l3-3 2 2 4-4"></path>
-        <path d="M7 10h2"></path>
-        <path d="M7 7h4"></path>
+        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
       </svg>
     ),
-    name: "Chart of Accounts",
-    route: "finance.index",
-    params: { section: "chart-of-accounts" },
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-        <line x1="12" y1="18" x2="12" y2="12"></line>
-        <line x1="9" y1="15" x2="15" y2="15"></line>
-      </svg>
-    ),
-    name: "Journal Entries",
-    route: "finance.index",
-    params: { section: "journal-entries" },
+    name: "Dashboard",
+    route: "finance.dashboard",
   },
   {
     icon: (
@@ -183,7 +178,7 @@ const financeItems: NavItem[] = [
         <polyline points="10 9 9 9 8 9"></polyline>
       </svg>
     ),
-    name: "Invoice Generation",
+    name: "Invoices",
     route: "finance.index",
     params: { section: "invoice-generation" },
     extraPaths: ["/create-invoice"],
@@ -225,67 +220,25 @@ const financeItems: NavItem[] = [
         <path d="M12 6v6l4 2"></path>
       </svg>
     ),
-    name: "Expense Tracking",
+    name: "Expenses",
     route: "finance.index",
     params: { section: "expense-tracking" },
   },
+  // REMOVED: Enterprise features not needed for SMEs
+  // Financial Reporting - Data shown in Dashboard
+  // Budget Analysis - Too complex for SMEs
+  // Bank Reconciliation - Rarely used by SMEs
+  // Recurring Transactions - Manual entry is simpler
+  // Cost Centers - Enterprise allocation feature
+  // Approval Workflow removed
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 3v18h18"></path>
-        <path d="M18 17V9"></path>
-        <path d="M13 17V5"></path>
-        <path d="M8 17v-3"></path>
+        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
       </svg>
     ),
-    name: "Financial Reporting",
-    route: "finance.index",
-    params: { section: "financial-reporting" },
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="12" y1="1" x2="12" y2="23"></line>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-      </svg>
-    ),
-    name: "Budget Analysis",
-    route: "finance.index",
-    params: { section: "budget-analysis" },
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path>
-      </svg>
-    ),
-    name: "Bank Reconciliation",
-    route: "finance.index",
-    params: { section: "reconciliation" },
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 12a8 8 0 018-8V0c-4.418 0-8 3.582-8 8s3.582 8 8 8v-4c-2.209 0-4-1.791-4-4zm15.293-4.707a1 1 0 00-1.414 1.414L17.586 10H15a1 1 0 000 2h4a1 1 0 001-1V7a1 1 0 10-2 0v1.293l-1.293-1.293z"/>
-      </svg>
-    ),
-    name: "Recurring Transactions",
-    route: "erp.finance.recurring-transactions.index",
-    new: true,
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 6v6l4 2"></path>
-      </svg>
-    ),
-    name: "Cost Centers",
-    route: "erp.finance.cost-centers.index",
-    new: true,
-  },
-  {
-    /* Approval Workflow removed */
+    name: "Audit Logs",
+    route: "erp.finance.audit-logs",
   },
 ];
 
@@ -329,6 +282,15 @@ const crmItems: NavItem[] = [
     ),
     name: "Customers",
     route: "crm.customers",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+      </svg>
+    ),
+    name: "Audit Logs",
+    route: "erp.crm.audit-logs",
   },
 ];
 
@@ -386,6 +348,15 @@ const managerItems: NavItem[] = [
     name: "Reports",
     route: "erp.manager.reports",
   },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+      </svg>
+    ),
+    name: "Audit Logs",
+    route: "erp.manager.audit-logs",
+  },
 ];
 
 const staffItems: NavItem[] = [
@@ -421,16 +392,6 @@ const staffItems: NavItem[] = [
     ),
     name: "Job Orders Repair",
     route: "erp.staff.job-orders-repair",
-  },
-  {
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="8" />
-        <path d="M12 8v4l3 2" />
-      </svg>
-    ),
-    name: "Attendance",
-    route: "erp.staff.attendance",
   },
   {
     icon: (
@@ -569,6 +530,10 @@ const AppSidebar_ERP: React.FC = () => {
     return financeItems.filter((item) => {
       // Allow approval workflow only for FINANCE_MANAGER
       if (item.route === "approvals.index") {
+        return role === "FINANCE_MANAGER";
+      }
+      // Hide audit logs from FINANCE_STAFF
+      if (item.route === "erp.finance.audit-logs") {
         return role === "FINANCE_MANAGER";
       }
       // Show all other finance items for any finance role

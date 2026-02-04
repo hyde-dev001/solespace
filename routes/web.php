@@ -195,11 +195,23 @@ Route::middleware('auth:shop_owner')->prefix('shop-owner')->name('shop-owner.')-
         return Inertia::render('ShopOwner/shopProfile', ['shop_owner' => $shopOwner]);
     })->name('shop-profile');
 
+    Route::get('/audit-logs', function () {
+        return Inertia::render('ShopOwner/AuditLogs');
+    })->name('audit-logs');
+
     Route::post('/employees', [UserAccessControlController::class, 'storeEmployee'])->name('employees.store');
     Route::delete('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'destroy'])->middleware('shop.isolation')->name('employees.destroy');
     Route::post('/employees/{employee}/suspend', [\App\Http\Controllers\EmployeeController::class, 'suspend'])->middleware('shop.isolation')->name('employees.suspend');
     Route::post('/employees/{employee}/activate', [\App\Http\Controllers\EmployeeController::class, 'activate'])->middleware('shop.isolation')->name('employees.activate');
 });
+
+/**
+ * Activity Logs API - Accessible by Shop Owner and ERP Users
+ * Must be in web.php to maintain session authentication
+ * No middleware here - authentication checked in controller for flexibility
+ */
+Route::get('/api/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index'])
+    ->name('api.activity_logs');
 
 // Shop Owner API Routes
 Route::middleware('auth:shop_owner')->prefix('api/shop-owner')->group(function () {
@@ -247,10 +259,10 @@ Route::prefix('api/products')->group(function () {
 // Session-backed API endpoints for finance (allow web-session authenticated users)
 // CONSOLIDATED: All finance routes under /api/finance/session
 Route::middleware('auth:user')->prefix('api/finance/session')->group(function () {
-    // Chart of Accounts
-    Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
-    Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
-    Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Api\Finance\AccountController::class, 'ledger']);
+    // REMOVED: Chart of Accounts - System auto-creates accounts for SMEs
+    // Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
+    // Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
+    // Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Api\Finance\AccountController::class, 'ledger']);
 
     // Expenses
     Route::get('expenses', [FinanceExpenseController::class, 'index']);
@@ -283,23 +295,23 @@ Route::middleware('auth:user')->prefix('api/finance/session')->group(function ()
     Route::post('invoices/{id}/send', [FinanceInvoiceController::class, 'send']);
     Route::post('invoices/{id}/void', [FinanceInvoiceController::class, 'void']);
 
-    // Journal Entries
-    Route::get('journal-entries', [FinanceJournalEntryController::class, 'index']);
-    Route::post('journal-entries', [FinanceJournalEntryController::class, 'store']);
-    Route::get('journal-entries/{id}', [FinanceJournalEntryController::class, 'show']);
-    Route::put('journal-entries/{id}', [FinanceJournalEntryController::class, 'update']);
-    Route::patch('journal-entries/{id}', [FinanceJournalEntryController::class, 'update']);
-    Route::delete('journal-entries/{id}', [FinanceJournalEntryController::class, 'destroy']);
-    Route::post('journal-entries/{id}/post', [FinanceJournalEntryController::class, 'post']);
-    Route::post('journal-entries/{id}/reverse', [FinanceJournalEntryController::class, 'reverse']);
+    // REMOVED: Journal Entries - Invoices/expenses auto-post behind the scenes for SMEs
+    // Route::get('journal-entries', [FinanceJournalEntryController::class, 'index']);
+    // Route::post('journal-entries', [FinanceJournalEntryController::class, 'store']);
+    // Route::get('journal-entries/{id}', [FinanceJournalEntryController::class, 'show']);
+    // Route::put('journal-entries/{id}', [FinanceJournalEntryController::class, 'update']);
+    // Route::patch('journal-entries/{id}', [FinanceJournalEntryController::class, 'update']);
+    // Route::delete('journal-entries/{id}', [FinanceJournalEntryController::class, 'destroy']);
+    // Route::post('journal-entries/{id}/post', [FinanceJournalEntryController::class, 'post']);
+    // Route::post('journal-entries/{id}/reverse', [FinanceJournalEntryController::class, 'reverse']);
 
-    // Bank Reconciliation routes
-    Route::prefix('reconciliation')->group(function () {
-        Route::get('transactions', [\App\Http\Controllers\ReconciliationController::class, 'getTransactions']);
-        Route::post('/', [\App\Http\Controllers\ReconciliationController::class, 'store']);
-        Route::get('history', [\App\Http\Controllers\ReconciliationController::class, 'history']);
-        Route::delete('{id}/unmatch', [\App\Http\Controllers\ReconciliationController::class, 'unmatch']);
-    });
+    // REMOVED: Bank Reconciliation - Too complex for SMEs
+    // Route::prefix('reconciliation')->group(function () {
+    //     Route::get('transactions', [\App\Http\Controllers\ReconciliationController::class, 'getTransactions']);
+    //     Route::post('/', [\App\Http\Controllers\ReconciliationController::class, 'store']);
+    //     Route::get('history', [\App\Http\Controllers\ReconciliationController::class, 'history']);
+    //     Route::delete('{id}/unmatch', [\App\Http\Controllers\ReconciliationController::class, 'unmatch']);
+    // });
 
     // Tax Rates
     Route::get('tax-rates', [\App\Http\Controllers\Api\Finance\TaxRateController::class, 'index']);
@@ -307,15 +319,15 @@ Route::middleware('auth:user')->prefix('api/finance/session')->group(function ()
     Route::put('tax-rates/{id}', [\App\Http\Controllers\Api\Finance\TaxRateController::class, 'update']);
     Route::delete('tax-rates/{id}', [\App\Http\Controllers\Api\Finance\TaxRateController::class, 'destroy']);
 
-    // Budgets
-    Route::get('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'index']);
-    Route::post('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'store']);
-    Route::get('budgets/{id}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'show']);
-    Route::put('budgets/{id}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'update']);
-    Route::delete('budgets/{id}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'destroy']);
-    Route::get('budgets/variance', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'variance']);
-    Route::get('budgets/utilization', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'utilization']);
-    Route::post('budgets/sync-accounts', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'syncAccounts']);
+    // REMOVED: Budgets - Too advanced for SMEs, basic expense tracking is sufficient
+    // Route::get('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'index']);
+    // Route::post('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'store']);
+    // Route::get('budgets/{id}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'show']);
+    // Route::put('budgets/{id}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'update']);
+    // Route::delete('budgets/{id}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'destroy']);
+    // Route::get('budgets/variance', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'variance']);
+    // Route::get('budgets/utilization', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'utilization']);
+    // Route::post('budgets/sync-accounts', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'syncAccounts']);
 
     // Approval Workflow routes
     Route::prefix('approvals')->group(function () {
@@ -356,13 +368,13 @@ Route::middleware(['auth:user'])->prefix('api/notifications')->group(function ()
     Route::put('preferences', [\App\Http\Controllers\Api\NotificationController::class, 'updatePreferences']);
 });
 
-// Add budget endpoints that work with web session authentication
-Route::middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->prefix('api/finance')->group(function () {
-    Route::get('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'index']);
-    Route::post('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'store']);
-    Route::patch('budgets/{budget}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'update']);
-    Route::delete('budgets/{budget}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'destroy']);
-});
+// REMOVED: Budget endpoints - Too advanced for SMEs
+// Route::middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->prefix('api/finance')->group(function () {
+//     Route::get('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'index']);
+//     Route::post('budgets', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'store']);
+//     Route::patch('budgets/{budget}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'update']);
+//     Route::delete('budgets/{budget}', [\App\Http\Controllers\Api\Finance\BudgetController::class, 'destroy']);
+// });
 
 // Shop Registration Routes
 Route::get('/shop/register', function () {
@@ -424,6 +436,14 @@ Route::middleware(['auth:user', 'role:HR'])->get('/erp/hr', function () {
     return Inertia::render('ERP/HR/HR');
 })->name('erp.hr');
 
+// HR Audit Logs
+Route::get('/erp/hr/audit-logs', function () {
+    if (Auth::guard('user')->user()?->force_password_change) {
+        return redirect()->route('erp.profile');
+    }
+    return Inertia::render('ERP/HR/AuditLogs');
+})->middleware(['auth:user', 'role:HR'])->name('erp.hr.audit-logs');
+
 Route::middleware(['auth:user'])->group(function () {
     Route::get('/erp/profile', [UserProfileController::class, 'show'])->name('erp.profile');
     Route::post('/erp/password', [UserProfileController::class, 'updatePassword'])->name('erp.password.update');
@@ -437,7 +457,22 @@ Route::prefix('finance')->name('finance.')->middleware(['auth:user', 'role:FINAN
         }
         return Inertia::render('ERP/Finance/Finance');
     })->name('index');
+    
+    Route::get('/dashboard', function () {
+        if (Auth::guard('user')->user()?->force_password_change) {
+            return redirect()->route('erp.profile');
+        }
+        return Inertia::render('ERP/Finance/Dashboard');
+    })->name('dashboard');
 });
+
+// Finance Audit Logs
+Route::get('/erp/finance/audit-logs', function () {
+    if (Auth::guard('user')->user()?->force_password_change) {
+        return redirect()->route('erp.profile');
+    }
+    return Inertia::render('ERP/Finance/AuditLogs');
+})->middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->name('erp.finance.audit-logs');
 
 // Approval Workflow page removed (frontend page deleted)
 
@@ -528,6 +563,8 @@ Route::prefix('erp/manager')->name('erp.manager.')->middleware(['auth:user', 'ro
         return Inertia::render('ERP/Manager/AuditLogs');
     })->name('audit-logs');
 });
+
+// Note: Manager audit-logs route already defined above within the manager group
 
 // STAFF routes (both MANAGER and STAFF can access)
 Route::prefix('erp/staff')->name('erp.staff.')->middleware(['auth:user', 'manager.staff:staff'])->group(function () {
@@ -630,33 +667,33 @@ Route::prefix('superAdmin')->name('superAdmin.')->middleware('auth:super_admin')
     Route::get('/data-report-access', [DataReportAccessController::class, 'index'])->name('data-report-access');
 });
 
-// Phase 3a: Recurring Transactions and Cost Center Routes
-Route::prefix('erp/finance')->name('erp.finance.')->middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->group(function () {
-    // Recurring Transactions routes
-    Route::prefix('recurring-transactions')->name('recurring-transactions.')->group(function () {
-        Route::get('/', [RecurringTransactionController::class, 'index'])->name('index');
-        Route::get('/create', [RecurringTransactionController::class, 'create'])->name('create');
-        Route::post('/', [RecurringTransactionController::class, 'store'])->name('store');
-        Route::get('/{recurringTransaction}/edit', [RecurringTransactionController::class, 'edit'])->name('edit');
-        Route::put('/{recurringTransaction}', [RecurringTransactionController::class, 'update'])->name('update');
-        Route::delete('/{recurringTransaction}', [RecurringTransactionController::class, 'destroy'])->name('destroy');
-        Route::post('/{recurringTransaction}/toggle-active', [RecurringTransactionController::class, 'toggleActive'])->name('toggle-active');
-        Route::get('/{recurringTransaction}/history', [RecurringTransactionController::class, 'executionHistory'])->name('execution-history');
-        Route::post('/{recurringTransaction}/execute', [RecurringTransactionController::class, 'executeNow'])->name('execute-now');
-    });
-
-    // Cost Center routes
-    Route::prefix('cost-centers')->name('cost-centers.')->group(function () {
-        Route::get('/', [CostCenterController::class, 'index'])->name('index');
-        Route::get('/create', [CostCenterController::class, 'create'])->name('create');
-        Route::post('/', [CostCenterController::class, 'store'])->name('store');
-        Route::get('/{costCenter}/edit', [CostCenterController::class, 'edit'])->name('edit');
-        Route::put('/{costCenter}', [CostCenterController::class, 'update'])->name('update');
-        Route::delete('/{costCenter}', [CostCenterController::class, 'destroy'])->name('destroy');
-        Route::get('/{costCenter}/analytics', [CostCenterController::class, 'analytics'])->name('analytics');
-        Route::post('/{costCenter}/allocate', [CostCenterController::class, 'allocateExpense'])->name('allocate-expense');
-    });
-});
+// REMOVED: Recurring Transactions and Cost Center Routes - Enterprise features not needed for SMEs
+// Route::prefix('erp/finance')->name('erp.finance.')->middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->group(function () {
+//     // Recurring Transactions routes
+//     Route::prefix('recurring-transactions')->name('recurring-transactions.')->group(function () {
+//         Route::get('/', [RecurringTransactionController::class, 'index'])->name('index');
+//         Route::get('/create', [RecurringTransactionController::class, 'create'])->name('create');
+//         Route::post('/', [RecurringTransactionController::class, 'store'])->name('store');
+//         Route::get('/{recurringTransaction}/edit', [RecurringTransactionController::class, 'edit'])->name('edit');
+//         Route::put('/{recurringTransaction}', [RecurringTransactionController::class, 'update'])->name('update');
+//         Route::delete('/{recurringTransaction}', [RecurringTransactionController::class, 'destroy'])->name('destroy');
+//         Route::post('/{recurringTransaction}/toggle-active', [RecurringTransactionController::class, 'toggleActive'])->name('toggle-active');
+//         Route::get('/{recurringTransaction}/history', [RecurringTransactionController::class, 'executionHistory'])->name('execution-history');
+//         Route::post('/{recurringTransaction}/execute', [RecurringTransactionController::class, 'executeNow'])->name('execute-now');
+//     });
+//
+//     // Cost Center routes
+//     Route::prefix('cost-centers')->name('cost-centers.')->group(function () {
+//         Route::get('/', [CostCenterController::class, 'index'])->name('index');
+//         Route::get('/create', [CostCenterController::class, 'create'])->name('create');
+//         Route::post('/', [CostCenterController::class, 'store'])->name('store');
+//         Route::get('/{costCenter}/edit', [CostCenterController::class, 'edit'])->name('edit');
+//         Route::put('/{costCenter}', [CostCenterController::class, 'update'])->name('update');
+//         Route::delete('/{costCenter}', [CostCenterController::class, 'destroy'])->name('destroy');
+//         Route::get('/{costCenter}/analytics', [CostCenterController::class, 'analytics'])->name('analytics');
+//         Route::post('/{costCenter}/allocate', [CostCenterController::class, 'allocateExpense'])->name('allocate-expense');
+//     });
+// });
 
 // Manager API Routes
 Route::prefix('api/manager')->name('api.manager.')->middleware(['auth:user', 'role:MANAGER,FINANCE_MANAGER,SUPER_ADMIN'])->group(function () {
@@ -689,3 +726,12 @@ Route::prefix('api/leave')->name('api.leave.')->middleware(['auth:user'])->group
 // Legacy API Routes
 Route::post('/api/shop/register', [ShopRegistrationController::class, 'store']);
 Route::post('/api/shop/register-full', [ShopRegistrationController::class, 'storeFull']);
+
+/**
+ * Load Module-Specific API Routes
+ * Following best practice: separate API files for better organization
+ */
+require __DIR__.'/hr-api.php';
+require __DIR__.'/finance-api.php';
+require __DIR__.'/shop-owner-api.php';
+

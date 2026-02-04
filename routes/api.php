@@ -1,23 +1,20 @@
 <?php
 
+/**
+ * Core API Routes
+ * 
+ * Purpose: Common API endpoints for authentication, payments, and core features
+ * 
+ * Note: Module-specific routes are in separate files:
+ * - routes/hr-api.php          (HR module)
+ * - routes/finance-api.php     (Finance module)
+ * - routes/shop-owner-api.php  (Shop Owner module)
+ */
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UsersController;
-use App\Http\Controllers\ERP\HR\EmployeeController;
 use App\Http\Controllers\FinancialReportController;
-use App\Http\Controllers\ReconciliationController;
-use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Api\Finance\BudgetController;
-use App\Http\Controllers\ERP\HR\AttendanceController;
-use App\Http\Controllers\ERP\HR\LeaveController;
-use App\Http\Controllers\ERP\HR\PayrollController;
-use App\Http\Controllers\ERP\HR\PerformanceController;
-use App\Http\Controllers\ERP\HR\DepartmentController;
-use App\Http\Controllers\ERP\HR\DocumentController;
-use App\Http\Controllers\ERP\HR\AuditLogController as HRAuditLogController;
-use App\Http\Controllers\ERP\HR\NotificationController;
-use App\Http\Controllers\ERP\HR\TrainingController;
-use App\Http\Controllers\ERP\HR\HRAnalyticsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -183,132 +180,19 @@ Route::get('/debug/me', function () {
     ]);
 })->middleware('web');
 
-Route::group(['middleware' => ['web', 'auth:user']], function () {
-    /**
-     * HR Module Routes
-     * Protected by: HR or shop_owner role + Shop isolation
-     */
-    Route::middleware(['role:HR,shop_owner', 'shop.isolation'])->prefix('hr')->group(function () {
-        // Dashboard Analytics
-        Route::get('dashboard', [HRAnalyticsController::class, 'dashboard'])->name('hr.dashboard');
-
-        // Employees
-        Route::apiResource('employees', EmployeeController::class);
-        Route::get('employees/statistics', [EmployeeController::class, 'statistics'])->name('employees.statistics');
-        Route::post('employees/{id}/suspend', [EmployeeController::class, 'suspend'])->name('employees.suspend');
-        Route::post('employees/{id}/activate', [EmployeeController::class, 'activate'])->name('employees.activate');
-
-        // Attendance
-        Route::apiResource('attendance', AttendanceController::class);
-        Route::post('attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.checkin');
-        Route::post('attendance/check-out', [AttendanceController::class, 'checkOut'])->name('attendance.checkout');
-        Route::get('attendance/employee/{employeeId}', [AttendanceController::class, 'getByEmployee'])->name('attendance.by_employee');
-        Route::get('attendance/statistics', [AttendanceController::class, 'statistics'])->name('attendance.statistics');
-
-        // Leave Requests
-        Route::apiResource('leave-requests', LeaveController::class);
-        Route::post('leave-requests/{id}/approve', [LeaveController::class, 'approve'])->name('leave.approve');
-        Route::post('leave-requests/{id}/reject', [LeaveController::class, 'reject'])->name('leave.reject');
-        Route::get('leave-requests/pending', [LeaveController::class, 'getPending'])->name('leave.pending');
-        Route::get('leave-requests/employee/{employeeId}/balance', [LeaveController::class, 'getBalance'])->name('leave.balance');
-
-        // Payroll
-        Route::apiResource('payroll', PayrollController::class);
-        Route::post('payroll/generate', [PayrollController::class, 'generatePayroll'])->name('payroll.generate');
-        Route::post('payroll/process', [PayrollController::class, 'processPayroll'])->name('payroll.process');
-        Route::get('payroll/{id}/export', [PayrollController::class, 'exportPayslip'])->name('payroll.export');
-        Route::get('payroll/employee/{employeeId}', [PayrollController::class, 'getByEmployee'])->name('payroll.by_employee');
-
-        // Performance Reviews
-        Route::apiResource('performance-reviews', PerformanceController::class);
-        Route::post('performance-reviews/{id}/submit', [PerformanceController::class, 'submit'])->name('performance.submit');
-        Route::get('performance-reviews/employee/{employeeId}', [PerformanceController::class, 'getByEmployee'])->name('performance.by_employee');
-
-        // Departments
-        Route::apiResource('departments', DepartmentController::class);
-        Route::get('departments/statistics', [DepartmentController::class, 'statistics'])->name('departments.statistics');
-
-        // Employee Documents
-        Route::apiResource('documents', DocumentController::class);
-        Route::get('documents/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
-        Route::post('documents/{id}/verify', [DocumentController::class, 'verify'])->name('documents.verify');
-        Route::post('documents/{id}/reject', [DocumentController::class, 'reject'])->name('documents.reject');
-        Route::get('documents/reports/expiring', [DocumentController::class, 'expiringDocuments'])->name('documents.expiring');
-        Route::get('documents/reports/expired', [DocumentController::class, 'expiredDocuments'])->name('documents.expired');
-        Route::get('documents/employee/{employeeId}', [DocumentController::class, 'employeeDocuments'])->name('documents.by_employee');
-        Route::get('documents/metadata/types', [DocumentController::class, 'documentTypes'])->name('documents.types');
-        Route::get('documents/reports/statistics', [DocumentController::class, 'statistics'])->name('documents.statistics');
-
-        // Audit Logs
-        Route::get('audit-logs', [HRAuditLogController::class, 'index'])->name('audit.index');
-        Route::get('audit-logs/{id}', [HRAuditLogController::class, 'show'])->name('audit.show');
-        Route::get('audit-logs/statistics', [HRAuditLogController::class, 'statistics'])->name('audit.statistics');
-        Route::get('audit-logs/entity/history', [HRAuditLogController::class, 'entityHistory'])->name('audit.entity_history');
-        Route::get('audit-logs/user/{userId}/activity', [HRAuditLogController::class, 'userActivity'])->name('audit.user_activity');
-        Route::get('audit-logs/employee/{employeeId}/activity', [HRAuditLogController::class, 'employeeActivity'])->name('audit.employee_activity');
-        Route::get('audit-logs/critical', [HRAuditLogController::class, 'criticalLogs'])->name('audit.critical');
-        Route::get('audit-logs/export', [HRAuditLogController::class, 'export'])->name('audit.export');
-        Route::get('audit-logs/filters/options', [HRAuditLogController::class, 'filterOptions'])->name('audit.filter_options');
-
-        // Notifications
-        Route::prefix('notifications')->group(function () {
-            Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
-            Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread_count');
-            Route::get('/stats', [NotificationController::class, 'stats'])->name('notifications.stats');
-            Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_as_read');
-            Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_as_read');
-            Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-            Route::delete('/clear-read', [NotificationController::class, 'clearRead'])->name('notifications.clear_read');
-        });
-
-        // Training Management
-        Route::prefix('training')->group(function () {
-            // Training Programs
-            Route::get('/programs', [TrainingController::class, 'index'])->name('training.programs.index');
-            Route::post('/programs', [TrainingController::class, 'store'])->name('training.programs.store');
-            Route::get('/programs/{id}', [TrainingController::class, 'show'])->name('training.programs.show');
-            Route::put('/programs/{id}', [TrainingController::class, 'update'])->name('training.programs.update');
-            Route::delete('/programs/{id}', [TrainingController::class, 'destroy'])->name('training.programs.destroy');
-
-            // Training Sessions
-            Route::get('/sessions', [TrainingController::class, 'sessions'])->name('training.sessions.index');
-            Route::post('/sessions', [TrainingController::class, 'storeSession'])->name('training.sessions.store');
-            Route::put('/sessions/{id}', [TrainingController::class, 'updateSession'])->name('training.sessions.update');
-            Route::delete('/sessions/{id}', [TrainingController::class, 'destroySession'])->name('training.sessions.destroy');
-
-            // Enrollments
-            Route::get('/enrollments', [TrainingController::class, 'enrollments'])->name('training.enrollments.index');
-            Route::post('/enroll', [TrainingController::class, 'enroll'])->name('training.enroll');
-            Route::put('/enrollments/{id}', [TrainingController::class, 'updateEnrollment'])->name('training.enrollments.update');
-            Route::post('/enrollments/{id}/complete', [TrainingController::class, 'completeEnrollment'])->name('training.enrollments.complete');
-
-            // Certifications
-            Route::get('/certifications', [TrainingController::class, 'certifications'])->name('training.certifications.index');
-
-            // Statistics
-            Route::get('/statistics', [TrainingController::class, 'statistics'])->name('training.statistics');
-        });
-    });
-
-    /**
-     * Audit Logs Routes
-     * Protected by: Manager/Admin role
-     */
-    Route::middleware(['role:MANAGER,STAFF,shop_owner'])->prefix('audit-logs')->group(function () {
-        Route::get('/', [AuditLogController::class, 'index']);
-        Route::get('/stats', [AuditLogController::class, 'stats']);
-        Route::get('/export', [AuditLogController::class, 'export']);
-    });
-});
-
+/**
+ * Legacy Finance Routes (to be migrated to finance-api.php)
+ * These are kept for backward compatibility
+ * TODO: Move to finance-api.php and update frontend to use new endpoints
+ */
 Route::prefix('finance/public')->group(function () {
     Route::get('budgets', [BudgetController::class, 'index']);
 });
 
 /**
- * Finance Module API Routes
+ * Legacy Finance Module Routes (for backward compatibility)
  * Protected by session-based authentication and role-based middleware
- * Allows: FINANCE_STAFF, FINANCE_MANAGER, MANAGER, STAFF roles
+ * TODO: Migrate frontend to use routes/finance-api.php
  */
 Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,MANAGER,STAFF', 'shop.isolation'])->prefix('finance')->group(function () {
     // Financial Reports
@@ -320,38 +204,38 @@ Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,M
         Route::get('ap-aging', [FinancialReportController::class, 'apAging']);
     });
 
-    // Bank Reconciliation routes
-    Route::prefix('reconciliation')->group(function () {
-        Route::get('transactions', [ReconciliationController::class, 'getTransactions']);
-        Route::post('/', [ReconciliationController::class, 'store']);
-        Route::post('auto-match', [ReconciliationController::class, 'autoMatch']);
-        Route::post('batch-reconcile', [ReconciliationController::class, 'batchReconcile']);
-        Route::get('history', [ReconciliationController::class, 'history']);
-        Route::delete('{id}/unmatch', [ReconciliationController::class, 'unmatch']);
-    });
+    // REMOVED: Bank Reconciliation - Too complex for SMEs
+    // Route::prefix('reconciliation')->group(function () {
+    //     Route::get('transactions', [ReconciliationController::class, 'getTransactions']);
+    //     Route::post('/', [ReconciliationController::class, 'store']);
+    //     Route::post('auto-match', [ReconciliationController::class, 'autoMatch']);
+    //     Route::post('batch-reconcile', [ReconciliationController::class, 'batchReconcile']);
+    //     Route::get('history', [ReconciliationController::class, 'history']);
+    //     Route::delete('{id}/unmatch', [ReconciliationController::class, 'unmatch']);
+    // });
 
-    // Budgets
-    Route::apiResource('budgets', BudgetController::class);
-    Route::get('budgets/variance', [BudgetController::class, 'variance']);
-    Route::get('budgets/utilization', [BudgetController::class, 'utilization']);
-    Route::post('budgets/{budget}/sync-actuals', [BudgetController::class, 'syncActuals']);
+    // REMOVED: Budgets - Too advanced for SMEs
+    // Route::apiResource('budgets', BudgetController::class);
+    // Route::get('budgets/variance', [BudgetController::class, 'variance']);
+    // Route::get('budgets/utilization', [BudgetController::class, 'utilization']);
+    // Route::post('budgets/{budget}/sync-actuals', [BudgetController::class, 'syncActuals']);
 
-    // Chart of Accounts
-    Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
-    Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
-    Route::get('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'show']);
-    Route::put('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'update']);
-    Route::delete('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'destroy']);
-    Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Api\Finance\AccountController::class, 'ledger']);
+    // REMOVED: Chart of Accounts - System auto-creates accounts for SMEs
+    // Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
+    // Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
+    // Route::get('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'show']);
+    // Route::put('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'update']);
+    // Route::delete('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'destroy']);
+    // Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Api\Finance\AccountController::class, 'ledger']);
 
-    // Journal Entries
-    Route::get('journal-entries', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'index']);
-    Route::post('journal-entries', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'store']);
-    Route::get('journal-entries/{id}', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'show']);
-    Route::patch('journal-entries/{id}', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'update']);
-    Route::delete('journal-entries/{id}', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'destroy']);
-    Route::post('journal-entries/{id}/post', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'post']);
-    Route::post('journal-entries/{id}/reverse', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'reverse']);
+    // REMOVED: Journal Entries - Auto-posting for SMEs
+    // Route::get('journal-entries', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'index']);
+    // Route::post('journal-entries', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'store']);
+    // Route::get('journal-entries/{id}', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'show']);
+    // Route::patch('journal-entries/{id}', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'update']);
+    // Route::delete('journal-entries/{id}', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'destroy']);
+    // Route::post('journal-entries/{id}/post', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'post']);
+    // Route::post('journal-entries/{id}/reverse', [\App\Http\Controllers\Api\Finance\JournalEntryController::class, 'reverse']);
 
     // Invoices
     Route::get('invoices', [\App\Http\Controllers\Api\Finance\InvoiceController::class, 'index']);
@@ -401,16 +285,8 @@ Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,M
 });
 
 /**
- * Staff/Manager Self-Service Attendance Routes
- * Protected by: STAFF or MANAGER role
+ * Module Routes are loaded via web.php
+ * - routes/hr-api.php
+ * - routes/finance-api.php  
+ * - routes/shop-owner-api.php
  */
-Route::middleware(['web', 'auth:user', 'role:STAFF,MANAGER,shop_owner'])->prefix('staff')->group(function () {
-    // Self check-in/out
-    Route::post('attendance/check-in', [AttendanceController::class, 'selfCheckIn'])->name('staff.attendance.checkin');
-    Route::post('attendance/check-out', [AttendanceController::class, 'selfCheckOut'])->name('staff.attendance.checkout');
-    Route::get('attendance/my-records', [AttendanceController::class, 'myRecords'])->name('staff.attendance.my_records');
-    Route::get('attendance/status', [AttendanceController::class, 'checkStatus'])->name('staff.attendance.status');
-
-    // Self-service leave request
-    Route::post('leave/request', [LeaveController::class, 'selfRequestLeave'])->name('staff.leave.request');
-});

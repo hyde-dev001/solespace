@@ -862,6 +862,48 @@ const RecentActivitiesWidget = ({ activities }: RecentActivitiesProps) => {
 export default function ManagerDashboard() {
     const { auth } = usePage().props as any;
     const { data: statsData, isLoading, error, isError } = useManagerStats();
+    const [clockedIn, setClockedIn] = useState(false);
+    const [loginTime, setLoginTime] = useState<string | null>(null);
+    const [logoutTime, setLogoutTime] = useState<string | null>(null);
+    const [lunchBreakTime, setLunchBreakTime] = useState<string | null>(null);
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+
+    const handleClockIn = () => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLoginTime(timeString);
+        setClockedIn(true);
+        setLogoutTime(null);
+        setLunchBreakTime(null);
+    };
+
+    const handleLunchBreak = () => {
+        if (!clockedIn) return;
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLunchBreakTime(timeString);
+    };
+
+    const handleClockOut = () => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLogoutTime(timeString);
+        setClockedIn(false);
+    };
+
+    const computeTotalHours = (timeIn: string | null, timeOut: string | null): string => {
+        if (!timeIn || !timeOut) return '--';
+        try {
+            const timeInDate = new Date(`1970-01-01 ${timeIn}`);
+            const timeOutDate = new Date(`1970-01-01 ${timeOut}`);
+            const diff = timeOutDate.getTime() - timeInDate.getTime();
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}h ${minutes}m`;
+        } catch {
+            return '--';
+        }
+    };
 
     // Show loading state
     if (isLoading) {
@@ -977,6 +1019,87 @@ export default function ManagerDashboard() {
                     </div>
                 </div>
 
+                {/* Time In/Out Section */}
+                <div className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden mb-8">
+                    <div className="p-8">
+                        <div className="relative flex items-center justify-center mb-6">
+                            <div className="text-center">
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">CURRENT TIME</p>
+                                <h2 className="text-5xl font-bold text-gray-900 dark:text-white">
+                                    {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                                </h2>
+                                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowAttendanceModal(true)}
+                                className="absolute right-0 top-0 px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all duration-300 active:scale-95 shadow-lg whitespace-nowrap"
+                            >
+                                View Attendance
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center mb-6">
+                            <div className={`px-4 py-2 rounded-full font-semibold text-sm ${
+                                clockedIn
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                                {clockedIn ? '✓ CLOCKED IN' : '● CLOCKED OUT'}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 justify-center mb-8">
+                            <button
+                                onClick={handleClockIn}
+                                disabled={clockedIn}
+                                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                                    clockedIn
+                                        ? 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
+                                        : 'bg-green-500 text-white hover:bg-green-600 active:scale-95 shadow-lg'
+                                }`}
+                            >
+                                Clock In
+                            </button>
+                            {clockedIn && !lunchBreakTime && (
+                                <button
+                                    onClick={handleLunchBreak}
+                                    className="px-8 py-3 rounded-full font-semibold transition-all duration-300 bg-yellow-500 text-white hover:bg-yellow-600 active:scale-95 shadow-lg"
+                                >
+                                    Lunch Break
+                                </button>
+                            )}
+                            <button
+                                onClick={handleClockOut}
+                                disabled={!clockedIn}
+                                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                                    !clockedIn
+                                        ? 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
+                                        : 'bg-red-500 text-white hover:bg-red-600 active:scale-95 shadow-lg'
+                                }`}
+                            >
+                                Clock Out
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Login Time</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{loginTime || '-- : -- : --'}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Lunch Break</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{lunchBreakTime || '-- : -- : --'}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Logout Time</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{logoutTime || '-- : -- : --'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     {metrics.map((metric) => (
@@ -1053,6 +1176,85 @@ export default function ManagerDashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Attendance History Modal */}
+                {showAttendanceModal && (
+                    <div 
+                        className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-[99999]"
+                        style={{ backdropFilter: 'blur(10px)' }}
+                        onClick={() => setShowAttendanceModal(false)}
+                    >
+                        <div 
+                            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full h-[80vh] overflow-hidden flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Attendance History</h2>
+                                <button
+                                    onClick={() => setShowAttendanceModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead className="bg-gray-50 dark:bg-gray-900">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time In</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lunch Break</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time Out</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Hours</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            {/* Sample data */}
+                                            <tr>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">Feb 4, 2026</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{loginTime || '--'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{lunchBreakTime || '--'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{logoutTime || '--'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{computeTotalHours(loginTime, logoutTime)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        clockedIn 
+                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                                                            : logoutTime 
+                                                            ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                    }`}>
+                                                        {clockedIn ? 'Active' : logoutTime ? 'Completed' : 'Pending'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {/* Previous records can go here */}
+                                            <tr>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">Feb 3, 2026</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">08:00:00 AM</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">12:00:00 PM</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">05:00:00 PM</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">9h 0m</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                        Completed
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayoutERP>
     );

@@ -259,14 +259,43 @@ export function usePostInvoice() {
 
 /**
  * Fetch all expenses with caching
+ * Now supports Query Builder filtering and sorting:
+ * - filter[status], filter[category], filter[vendor]
+ * - filter[date_from], filter[date_to]
+ * - sort=date, sort=-amount, etc.
  */
-export function useExpenses() {
+export function useExpenses(filters?: {
+  status?: string;
+  category?: string;
+  vendor?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  sort?: string;
+}) {
   const api = useFinanceApi();
   
   return useQuery({
-    queryKey: queryKeys.expenses,
+    queryKey: filters ? [...queryKeys.expenses, filters] : queryKeys.expenses,
     queryFn: async () => {
-      const response = await api.get('/api/finance/session/expenses');
+      let url = '/api/finance/session/expenses';
+      
+      // Build query parameters using Query Builder format
+      if (filters) {
+        const params = new URLSearchParams();
+        if (filters.status) params.append('filter[status]', filters.status);
+        if (filters.category) params.append('filter[category]', filters.category);
+        if (filters.vendor) params.append('filter[vendor]', filters.vendor);
+        if (filters.dateFrom) params.append('filter[date_from]', filters.dateFrom);
+        if (filters.dateTo) params.append('filter[date_to]', filters.dateTo);
+        if (filters.search) params.append('filter[search_all]', filters.search);
+        if (filters.sort) params.append('sort', filters.sort);
+        
+        const queryString = params.toString();
+        if (queryString) url += `?${queryString}`;
+      }
+      
+      const response = await api.get(url);
       if (!response.ok) {
         throw new Error(response.error || 'Failed to load expenses');
       }

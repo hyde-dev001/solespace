@@ -66,44 +66,8 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, pro
       });
 
       if (response.data.success) {
-        // Update localStorage for immediate UI feedback
-        const key = 'ss_cart';
-        const raw = localStorage.getItem(key);
-        const cart = raw ? JSON.parse(raw) : [];
-        
-        // Create unique ID based on product + size + color + image (for color variants)
-        const optsPart = size ? `::size=${size}` : '';
-        const colorPart = color ? `::color=${encodeURIComponent(color)}` : '';
-        const imgPart = selectedImage ? `::img=${encodeURIComponent(selectedImage)}` : '';
-        const localId = `${pid}${optsPart}${colorPart}${imgPart}`;
-        
-        const existing = cart.find((c: any) => String(c.id) === localId);
-        if (existing) {
-          existing.qty += addQty;
-        } else {
-          let price = 0;
-          if (product && typeof product.price !== 'undefined' && product.price !== null) {
-            if (typeof product.price === 'number') price = product.price;
-            else price = parseFloat(String(product.price).replace(/[^0-9.-]+/g, '')) || 0;
-          }
-
-          cart.push({
-            id: localId,
-            pid: pid,
-            qty: addQty,
-            name: product?.name ?? null,
-            price: price,
-            size: size,
-            color: color,
-            image: selectedImage,
-            stock_quantity: product?.stock_quantity || product?.stockQuantity || 0,
-          });
-        }
-        
-        localStorage.setItem(key, JSON.stringify(cart));
-
         // Notify with the new total count from server
-        const total = response.data.total_count || cart.reduce((s: number, it: any) => s + (it.qty || 0), 0);
+        const total = response.data.total_count;
         const ev = new CustomEvent('cart:added', { detail: { added: addQty, total } });
         window.dispatchEvent(ev);
 

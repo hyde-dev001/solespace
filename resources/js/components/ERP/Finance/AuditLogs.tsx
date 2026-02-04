@@ -122,17 +122,40 @@ export default function ERPAuditLogs() {
       if (startDate) params.append("start_date", startDate);
       if (endDate) params.append("end_date", endDate);
 
-      const response = await fetch(`/api/audit-logs?${params}`);
+      const response = await fetch(`/api/finance/audit-logs?${params}`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error("You don't have permission to access audit logs");
+        }
+        throw new Error(`Failed to fetch logs: ${response.statusText}`);
+      }
+      
       const data = await response.json();
 
-      setLogs(data.logs.data);
-      setPagination(data.logs);
-      setActions(data.actions);
-      setObjectTypes(data.object_types);
-      setCurrentPage(page);
+      if (data && data.logs && data.logs.data) {
+        setLogs(data.logs.data);
+        setPagination(data.logs);
+        setActions(data.actions || []);
+        setObjectTypes(data.object_types || []);
+        setCurrentPage(page);
+      } else {
+        setLogs([]);
+        setPagination(null);
+        setActions([]);
+        setObjectTypes([]);
+      }
     } catch (error) {
       console.error("Error fetching logs:", error);
-      Swal.fire("Error", "Failed to fetch audit logs", "error");
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch audit logs";
+      Swal.fire("Error", errorMessage, "error");
+      setLogs([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
@@ -141,11 +164,27 @@ export default function ERPAuditLogs() {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/audit-logs/stats");
+      const response = await fetch("/api/finance/audit-logs/statistics", {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 403) {
+          console.warn("No permission to access audit log stats");
+          setStats(null);
+          return;
+        }
+        throw new Error(`Failed to fetch stats: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setStats(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
+      setStats(null);
     }
   };
 
@@ -177,7 +216,7 @@ export default function ERPAuditLogs() {
       if (startDate) params.append("start_date", startDate);
       if (endDate) params.append("end_date", endDate);
 
-      window.location.href = `/api/audit-logs/export?${params}`;
+      window.location.href = `/api/finance/audit-logs/export?${params}`;
     } catch (error) {
       console.error("Error exporting:", error);
       Swal.fire("Error", "Failed to export logs", "error");
@@ -236,7 +275,7 @@ export default function ERPAuditLogs() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Logs</p>
                   <h3 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
-                    {stats.total_logs.toLocaleString()}
+                    {stats?.total_logs?.toLocaleString() || '0'}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">All recorded activities</p>
                 </div>
@@ -255,7 +294,7 @@ export default function ERPAuditLogs() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last 24 Hours</p>
                   <h3 className="text-3xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
-                    {stats.logs_last_24h}
+                    {stats?.logs_last_24h || 0}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Recent activities</p>
                 </div>
@@ -274,7 +313,7 @@ export default function ERPAuditLogs() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Distinct Actions</p>
                   <h3 className="text-3xl font-bold text-purple-600 dark:text-purple-400 transition-colors duration-300">
-                    {Object.keys(stats.action_counts).length}
+                    {stats?.action_counts ? Object.keys(stats.action_counts).length : 0}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Action types</p>
                 </div>
@@ -293,7 +332,7 @@ export default function ERPAuditLogs() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Object Types</p>
                   <h3 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 transition-colors duration-300">
-                    {Object.keys(stats.object_type_counts).length}
+                    {stats?.object_type_counts ? Object.keys(stats.object_type_counts).length : 0}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Entity types</p>
                 </div>
