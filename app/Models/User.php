@@ -10,11 +10,25 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasApiTokens, Notifiable, LogsActivity;
+    use HasFactory, HasApiTokens, Notifiable, LogsActivity, HasRoles;
+    
+    /**
+     * The guard name for this model (for Spatie Permission)
+     */
+    protected $guard_name = 'user';
+    
+    /**
+     * Override to ensure guard name is always 'user'
+     */
+    public function getDefaultGuardName()
+    {
+        return 'user';
+    }
     
     /**
      * The attributes that are mass assignable.
@@ -79,19 +93,25 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has a specific role
+     * Check if user has a specific role (OLD COLUMN - Deprecated)
+     * Use Spatie's hasRole() method instead for new code
+     * This is kept for backward compatibility only
      */
-    public function hasRole($role): bool
+    public function hasOldRole($role): bool
     {
-        return $this->role === $role;
+        return strtoupper((string) $this->role) === strtoupper((string) $role);
     }
 
     /**
-     * Check if user has any of the given roles
+     * Check if user has any of the given roles (OLD COLUMN - Deprecated)
+     * Use Spatie's hasAnyRole() method instead for new code
+     * This is kept for backward compatibility only
      */
-    public function hasAnyRole($roles): bool
+    public function hasAnyOldRole($roles): bool
     {
-        return in_array($this->role, (array) $roles);
+        $userRole = strtoupper((string) $this->role);
+        $rolesArray = array_map('strtoupper', (array) $roles);
+        return in_array($userRole, $rolesArray);
     }
 
     /**
@@ -99,7 +119,7 @@ class User extends Authenticatable
      */
     public function getAvailableModuleRoles(): array
     {
-        return ['HR', 'FINANCE', 'STAFF', 'MANAGER'];
+        return ['MANAGER', 'STAFF'];
     }
     
     /**

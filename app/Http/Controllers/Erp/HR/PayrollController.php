@@ -34,7 +34,7 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        if (!$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -89,7 +89,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -167,7 +168,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -185,7 +187,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -235,7 +238,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -262,15 +266,14 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Role Validation - Only PAYROLL_MANAGER or shop_owner can generate payroll
-        $allowedRoles = ['PAYROLL_MANAGER', 'shop_owner', 'HR'];
-        if (!in_array($user->role, $allowedRoles)) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized payroll generation attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role
+                'user_role' => $user->getRoleNames()->first()
             ]);
             return response()->json([
-                'error' => 'Unauthorized. Only Payroll Managers, HR, or shop owners can generate payroll.'
+                'error' => 'Unauthorized. Only Managers or users with HR permissions can generate payroll.'
             ], 403);
         }
 
@@ -337,7 +340,7 @@ class PayrollController extends Controller
 
                 \Log::info('Payroll generated via service', [
                     'generator_id' => $user->id,
-                    'generator_role' => $user->role,
+                    'generator_role' => $user->getRoleNames()->first(),
                     'payroll_id' => $payroll->id,
                     'employee_id' => $employeeId,
                     'period' => $payrollPeriod,
@@ -372,16 +375,15 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Role Validation
-        $allowedRoles = ['PAYROLL_APPROVER', 'shop_owner'];
-        if (!in_array($user->role, $allowedRoles)) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized payroll approval attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role,
+                'user_role' => $user->getRoleNames()->first(),
                 'payroll_id' => $id
             ]);
             return response()->json([
-                'error' => 'Unauthorized. Only Payroll Approvers or shop owners can approve payroll.'
+                'error' => 'Unauthorized. Only Managers or users with HR permissions can approve payroll.'
             ], 403);
         }
 
@@ -416,7 +418,7 @@ class PayrollController extends Controller
         // Audit logging
         \Log::info('Payroll approved', [
             'approver_id' => $user->id,
-            'approver_role' => $user->role,
+            'approver_role' => $user->getRoleNames()->first(),
             'payroll_id' => $id,
             'employee_id' => $payroll->employee_id,
             'amount' => $payroll->netSalary
@@ -448,7 +450,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -497,7 +500,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -538,12 +542,11 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Role Validation
-        $allowedRoles = ['HR', 'PAYROLL_MANAGER', 'PAYROLL_APPROVER', 'shop_owner'];
-        if (!in_array($user->role, $allowedRoles)) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized payroll export attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role,
+                'user_role' => $user->getRoleNames()->first(),
                 'payroll_id' => $id
             ]);
             return response()->json([
@@ -558,7 +561,7 @@ class PayrollController extends Controller
         // Audit logging
         \Log::info('Payroll exported', [
             'exporter_id' => $user->id,
-            'exporter_role' => $user->role,
+            'exporter_role' => $user->getRoleNames()->first(),
             'payroll_id' => $id,
             'employee_id' => $payroll->employee_id
         ]);
@@ -597,7 +600,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -635,7 +639,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -694,7 +699,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -752,7 +758,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -793,7 +800,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -839,7 +847,8 @@ class PayrollController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

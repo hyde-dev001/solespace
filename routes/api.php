@@ -194,7 +194,7 @@ Route::prefix('finance/public')->group(function () {
  * Protected by session-based authentication and role-based middleware
  * TODO: Migrate frontend to use routes/finance-api.php
  */
-Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,MANAGER,STAFF', 'shop.isolation'])->prefix('finance')->group(function () {
+Route::middleware(['web', 'auth:web,user', 'old_role:Finance Staff|Finance Manager|Manager|Staff', 'shop.isolation'])->prefix('finance')->group(function () {
     // Financial Reports
     Route::prefix('reports')->group(function () {
         Route::get('balance-sheet', [FinancialReportController::class, 'balanceSheet']);
@@ -252,8 +252,8 @@ Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,M
     Route::get('expenses/{id}', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'show']);
     Route::put('expenses/{id}', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'update']);
     Route::delete('expenses/{id}', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'destroy']);
-    Route::post('expenses/{id}/approve', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'approve'])->middleware('role:FINANCE_MANAGER');
-    Route::post('expenses/{id}/reject', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'reject'])->middleware('role:FINANCE_MANAGER');
+    Route::post('expenses/{id}/approve', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'approve'])->middleware('permission:approve-expenses');
+    Route::post('expenses/{id}/reject', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'reject'])->middleware('permission:approve-expenses');
 
     // Expense Receipt Management
     Route::post('expenses/{id}/receipt', [\App\Http\Controllers\Api\Finance\ExpenseController::class, 'uploadReceipt']);
@@ -276,8 +276,8 @@ Route::middleware(['web', 'auth:web,user', 'role:FINANCE_STAFF,FINANCE_MANAGER,M
         Route::get('history', [\App\Http\Controllers\ApprovalController::class, 'getHistory']);
         Route::get('{id}/history', [\App\Http\Controllers\ApprovalController::class, 'getApprovalHistory']);
 
-        // Only Finance Manager can approve/reject transactions
-        Route::middleware('role:FINANCE_MANAGER')->group(function () {
+        // Only users with approve-expenses permission can approve/reject transactions
+        Route::middleware('permission:approve-expenses')->group(function () {
             Route::post('{id}/approve', [\App\Http\Controllers\ApprovalController::class, 'approve']);
             Route::post('{id}/reject', [\App\Http\Controllers\ApprovalController::class, 'reject']);
         });

@@ -10,6 +10,24 @@ use Illuminate\Support\Facades\Log;
 
 class ManagerController extends Controller
 {
+    private function userHasManagerAccess($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $roleColumn = strtoupper((string) $user->role);
+        if (in_array($roleColumn, ['MANAGER', 'FINANCE_MANAGER', 'SUPER_ADMIN'], true)) {
+            return true;
+        }
+
+        if (method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['Manager', 'Finance Manager', 'Super Admin'])) {
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Get dashboard statistics for Manager
      */
@@ -23,7 +41,7 @@ class ManagerController extends Controller
             }
             
             // Check if user has manager role
-            if (!in_array($user->role, ['MANAGER', 'FINANCE_MANAGER', 'SUPER_ADMIN'])) {
+            if (!$this->userHasManagerAccess($user)) {
                 return response()->json(['error' => 'Access denied. Manager role required.'], 403);
             }
             
@@ -211,7 +229,7 @@ class ManagerController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
             
-            if (!in_array($user->role, ['MANAGER', 'FINANCE_MANAGER', 'SUPER_ADMIN'])) {
+            if (!$this->userHasManagerAccess($user)) {
                 return response()->json(['error' => 'Access denied. Manager role required.'], 403);
             }
             
@@ -268,7 +286,7 @@ class ManagerController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
             
-            if (!in_array($user->role, ['MANAGER', 'FINANCE_MANAGER', 'SUPER_ADMIN'])) {
+            if (!$this->userHasManagerAccess($user)) {
                 return response()->json(['error' => 'Access denied. Manager role required.'], 403);
             }
             

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * ShopOwner Model
@@ -24,7 +25,12 @@ use Illuminate\Notifications\Notifiable;
  */
 class ShopOwner extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
+
+    /**
+     * The guard name for this model (for Spatie Permission)
+     */
+    protected $guard_name = 'shop_owner';
 
     /**
      * The attributes that are mass assignable.

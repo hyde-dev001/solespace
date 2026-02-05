@@ -20,46 +20,57 @@ class ActivityLogController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if authenticated via either guard
-        $user = Auth::guard('user')->user();
-        $shopOwner = Auth::guard('shop_owner')->user();
-        
-        // If not authenticated with either guard, return unauthorized
-        if (!$user && !$shopOwner) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        
-        // Shop Owner sees everything
-        if ($shopOwner) {
-            return $this->getShopOwnerLogs($shopOwner->id, $request);
-        }
-        
-        // User role-based filtering
-        if ($user) {
-            $role = $user->role;
+        try {
+            // Check if authenticated via either guard
+            $user = Auth::guard('user')->user();
+            $shopOwner = Auth::guard('shop_owner')->user();
             
-            switch ($role) {
-                case 'MANAGER':
-                    return $this->getManagerLogs($user, $request);
-                    
-                case 'HR':
-                    return $this->getHRLogs($user, $request);
-                    
-                case 'FINANCE_MANAGER':
-                case 'FINANCE_STAFF':
-                    return $this->getFinanceLogs($user, $request);
-                    
-                case 'CRM':
-                    return $this->getCRMLogs($user, $request);
-                    
-                default:
-                    return response()->json([
-                        'message' => 'Your role does not have audit log access'
-                    ], 403);
+            // If not authenticated with either guard, return unauthorized
+            if (!$user && !$shopOwner) {
+                return response()->json(['message' => 'Unauthorized'], 401);
             }
+            
+            // Shop Owner sees everything
+            if ($shopOwner) {
+                return $this->getShopOwnerLogs($shopOwner->id, $request);
+            }
+            
+            // User role-based filtering
+            if ($user) {
+                // Use Spatie role checking
+                if ($user->hasRole('Manager')) {
+                    return $this->getManagerLogs($user, $request);
+                }
+                
+                if ($user->hasRole('HR')) {
+                    return $this->getHRLogs($user, $request);
+                }
+                
+                if ($user->hasAnyRole(['Finance Manager', 'Finance Staff'])) {
+                    return $this->getFinanceLogs($user, $request);
+                }
+                
+                if ($user->hasRole('CRM')) {
+                    return $this->getCRMLogs($user, $request);
+                }
+                
+                // Default: role doesn't have audit log access
+                return response()->json([
+                    'message' => 'Your role does not have audit log access'
+                ], 403);
+            }
+            
+            return response()->json(['message' => 'Unauthorized'], 401);
+        } catch (\Exception $e) {
+            \Log::error('Activity log error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Error fetching activity logs',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
-        
-        return response()->json(['message' => 'Unauthorized'], 401);
     }
     
     /**
@@ -70,15 +81,21 @@ class ActivityLogController extends Controller
         $query = Activity::query()
             ->where(function($q) use ($shopOwnerId) {
                 // Activities performed by shop owner
-                $q->where('causer_type', 'App\\Models\\ShopOwner')
-                  ->where('causer_id', $shopOwnerId);
-                // OR activities on models belonging to this shop owner
-                $q->orWhereHas('subject', function($subQuery) use ($shopOwnerId) {
-                    // Check if subject has shop_owner_id
-                    $subQuery->where('shop_owner_id', $shopOwnerId);
+                $q->where(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\ShopOwner')
+                         ->where('causer_id', $shopOwnerId);
+                })
+                // OR activities performed by users/employees of this shop
+                ->orWhere(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\User')
+                         ->whereIn('causer_id', function($userQuery) use ($shopOwnerId) {
+                             $userQuery->select('id')
+                                       ->from('users')
+                                       ->where('shop_owner_id', $shopOwnerId);
+                         });
                 });
             })
-            ->with('causer', 'subject')
+            ->with(['causer', 'subject'])
             ->orderBy('created_at', 'desc');
         
         return $this->applyFiltersAndPaginate($query, $request);
@@ -93,16 +110,22 @@ class ActivityLogController extends Controller
         
         $query = Activity::query()
             ->where(function($q) use ($shopOwnerId) {
-                // All activities related to this shop
-                $q->whereHas('subject', function($subQuery) use ($shopOwnerId) {
-                    $subQuery->where('shop_owner_id', $shopOwnerId);
-                });
-                // OR activities performed by users in this shop
-                $q->orWhereHas('causer', function($causerQuery) use ($shopOwnerId) {
-                    $causerQuery->where('shop_owner_id', $shopOwnerId);
+                // Activities performed by shop owner
+                $q->where(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\ShopOwner')
+                         ->where('causer_id', $shopOwnerId);
+                })
+                // OR activities performed by users/employees in this shop
+                ->orWhere(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\User')
+                         ->whereIn('causer_id', function($userQuery) use ($shopOwnerId) {
+                             $userQuery->select('id')
+                                       ->from('users')
+                                       ->where('shop_owner_id', $shopOwnerId);
+                         });
                 });
             })
-            ->with('causer', 'subject')
+            ->with(['causer', 'subject'])
             ->orderBy('created_at', 'desc');
         
         return $this->applyFiltersAndPaginate($query, $request);
@@ -126,10 +149,22 @@ class ActivityLogController extends Controller
                 'App\\Models\\HR\\Employee',
                 'App\\Models\\HR\\Department',
             ])
-            ->whereHas('subject', function($subQuery) use ($shopOwnerId) {
-                $subQuery->where('shop_owner_id', $shopOwnerId);
+            ->where(function($q) use ($shopOwnerId) {
+                // Filter by causers from this shop (shop owner or their users)
+                $q->where(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\ShopOwner')
+                         ->where('causer_id', $shopOwnerId);
+                })
+                ->orWhere(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\User')
+                         ->whereIn('causer_id', function($userQuery) use ($shopOwnerId) {
+                             $userQuery->select('id')
+                                       ->from('users')
+                                       ->where('shop_owner_id', $shopOwnerId);
+                         });
+                });
             })
-            ->with('causer', 'subject')
+            ->with(['causer', 'subject'])
             ->orderBy('created_at', 'desc');
         
         return $this->applyFiltersAndPaginate($query, $request);
@@ -150,10 +185,22 @@ class ActivityLogController extends Controller
                 'App\\Models\\Finance\\Revenue',
                 'App\\Models\\Finance\\BankAccount',
             ])
-            ->whereHas('subject', function($subQuery) use ($shopOwnerId) {
-                $subQuery->where('shop_owner_id', $shopOwnerId);
+            ->where(function($q) use ($shopOwnerId) {
+                // Filter by causers from this shop (shop owner or their users)
+                $q->where(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\ShopOwner')
+                         ->where('causer_id', $shopOwnerId);
+                })
+                ->orWhere(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\User')
+                         ->whereIn('causer_id', function($userQuery) use ($shopOwnerId) {
+                             $userQuery->select('id')
+                                       ->from('users')
+                                       ->where('shop_owner_id', $shopOwnerId);
+                         });
+                });
             })
-            ->with('causer', 'subject')
+            ->with(['causer', 'subject'])
             ->orderBy('created_at', 'desc');
         
         return $this->applyFiltersAndPaginate($query, $request);
@@ -174,10 +221,22 @@ class ActivityLogController extends Controller
                 'App\\Models\\CRM\\Inquiry',
                 'App\\Models\\CRM\\Interaction',
             ])
-            ->whereHas('subject', function($subQuery) use ($shopOwnerId) {
-                $subQuery->where('shop_owner_id', $shopOwnerId);
+            ->where(function($q) use ($shopOwnerId) {
+                // Filter by causers from this shop (shop owner or their users)
+                $q->where(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\ShopOwner')
+                         ->where('causer_id', $shopOwnerId);
+                })
+                ->orWhere(function($subQ) use ($shopOwnerId) {
+                    $subQ->where('causer_type', 'App\\Models\\User')
+                         ->whereIn('causer_id', function($userQuery) use ($shopOwnerId) {
+                             $userQuery->select('id')
+                                       ->from('users')
+                                       ->where('shop_owner_id', $shopOwnerId);
+                         });
+                });
             })
-            ->with('causer', 'subject')
+            ->with(['causer', 'subject'])
             ->orderBy('created_at', 'desc');
         
         return $this->applyFiltersAndPaginate($query, $request);

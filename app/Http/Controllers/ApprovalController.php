@@ -626,8 +626,8 @@ class ApprovalController extends Controller
             ]);
 
             // Check if delegate has sufficient privileges
-            $delegate = DB::table('users')->where('id', $validated['delegate_to_id'])->first();
-            if (!in_array($delegate->role, ['MANAGER', 'FINANCE_MANAGER'])) {
+            $delegate = \App\Models\User::find($validated['delegate_to_id']);
+            if (!$delegate || !$delegate->hasAnyRole(['Manager', 'Finance Manager'])) {
                 return response()->json(['error' => 'Delegate must have manager role'], 400);
             }
 

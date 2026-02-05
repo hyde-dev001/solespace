@@ -34,6 +34,7 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('approval_date')->nullable();
             $table->text('rejection_reason')->nullable();
+            $table->text('approver_comments')->nullable();
             
             $table->timestamps();
             

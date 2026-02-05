@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import AppLayoutERP from "../../../layout/AppLayout_ERP";
+import { hasPermission, hasAnyPermission } from "../../../utils/permissions";
 // REMOVED: Enterprise-level features not needed for SMEs
 // import ChartoOfAccounts from "../Finance/ChartoOfAccounts";
 // import { JournalEntries } from "../Finance/JournalEntries";
@@ -51,15 +52,80 @@ export default function FinancePage() {
     try {
       switch (section) {
         case "invoice-generation":
+          // Check invoice permissions
+          if (!hasAnyPermission(auth, ['view-invoices', 'create-invoices', 'edit-invoices', 'delete-invoices', 'send-invoices'])) {
+            return (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">🚫</div>
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Access Denied</h2>
+                  <p className="text-gray-600 dark:text-gray-400">You don't have permission to view invoices.</p>
+                </div>
+              </div>
+            );
+          }
           return <Invoice />;
+          
         case "create-invoice":
+          // Check create invoice permission
+          if (!hasPermission(auth, 'create-invoices')) {
+            return (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">🚫</div>
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Access Denied</h2>
+                  <p className="text-gray-600 dark:text-gray-400">You don't have permission to create invoices.</p>
+                </div>
+              </div>
+            );
+          }
           return <CreateInvoice />;
+          
         case "expense-tracking":
+          // Check expense permissions
+          if (!hasAnyPermission(auth, ['view-expenses', 'create-expenses', 'edit-expenses', 'delete-expenses', 'approve-expenses'])) {
+            return (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">🚫</div>
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Access Denied</h2>
+                  <p className="text-gray-600 dark:text-gray-400">You don't have permission to view expenses.</p>
+                </div>
+              </div>
+            );
+          }
           return <Expense />;
+          
         case "repair-pricing":
+          // Check pricing permissions
+          if (!hasAnyPermission(auth, ['view-pricing', 'edit-pricing', 'manage-service-pricing'])) {
+            return (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">🚫</div>
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Access Denied</h2>
+                  <p className="text-gray-600 dark:text-gray-400">You don't have permission to manage repair pricing.</p>
+                </div>
+              </div>
+            );
+          }
           return <RepairPriceApproval />;
+          
         case "shoe-pricing":
+          // Check pricing permissions
+          if (!hasAnyPermission(auth, ['view-pricing', 'edit-pricing', 'manage-service-pricing'])) {
+            return (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <div className="text-red-500 text-6xl mb-4">🚫</div>
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Access Denied</h2>
+                  <p className="text-gray-600 dark:text-gray-400">You don't have permission to manage shoe pricing.</p>
+                </div>
+              </div>
+            );
+          }
           return <ShoePriceApproval />;
+          
         default:
           return <Invoice />;
       }

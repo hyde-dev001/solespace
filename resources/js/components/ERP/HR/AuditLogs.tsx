@@ -122,14 +122,17 @@ export default function ERPAuditLogs() {
       if (startDate) params.append("start_date", startDate);
       if (endDate) params.append("end_date", endDate);
 
-      const response = await fetch(`/api/audit-logs?${params}`);
-      const data = await response.json();
+      const response = await fetch(`/api/hr/audit-logs?${params}`);
+      const result = await response.json();
 
-      setLogs(data.logs.data);
-      setPagination(data.logs);
-      setActions(data.actions);
-      setObjectTypes(data.object_types);
-      setCurrentPage(page);
+      if (result.success && result.data) {
+        setLogs(result.data.data || []);
+        setPagination(result.data);
+        setCurrentPage(page);
+      } else {
+        setLogs([]);
+        Swal.fire("Error", result.error || "Failed to fetch audit logs", "error");
+      }
     } catch (error) {
       console.error("Error fetching logs:", error);
       Swal.fire("Error", "Failed to fetch audit logs", "error");
@@ -141,9 +144,11 @@ export default function ERPAuditLogs() {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/audit-logs/stats");
-      const data = await response.json();
-      setStats(data);
+      const response = await fetch("/api/hr/audit-logs/statistics");
+      const result = await response.json();
+      if (result.success && result.data) {
+        setStats(result.data);
+      }
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
@@ -177,7 +182,7 @@ export default function ERPAuditLogs() {
       if (startDate) params.append("start_date", startDate);
       if (endDate) params.append("end_date", endDate);
 
-      window.location.href = `/api/audit-logs/export?${params}`;
+      window.location.href = `/api/hr/audit-logs/export?${params}`;
     } catch (error) {
       console.error("Error exporting:", error);
       Swal.fire("Error", "Failed to export logs", "error");
@@ -236,7 +241,7 @@ export default function ERPAuditLogs() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Logs</p>
                   <h3 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
-                    {stats.total_logs.toLocaleString()}
+                    {stats.total_logs?.toLocaleString() || '0'}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">All recorded activities</p>
                 </div>
@@ -253,11 +258,11 @@ export default function ERPAuditLogs() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last 24 Hours</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Recent Logs</p>
                   <h3 className="text-3xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
-                    {stats.logs_last_24h}
+                    {stats.total_logs || 0}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Recent activities</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Last 30 days</p>
                 </div>
               </div>
             </div>
@@ -274,7 +279,7 @@ export default function ERPAuditLogs() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Distinct Actions</p>
                   <h3 className="text-3xl font-bold text-purple-600 dark:text-purple-400 transition-colors duration-300">
-                    {Object.keys(stats.action_counts).length}
+                    {stats.by_action ? Object.keys(stats.by_action).length : 0}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Action types</p>
                 </div>
@@ -291,11 +296,11 @@ export default function ERPAuditLogs() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Object Types</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Modules</p>
                   <h3 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 transition-colors duration-300">
-                    {Object.keys(stats.object_type_counts).length}
+                    {stats.by_module ? Object.keys(stats.by_module).length : 0}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Entity types</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Module types</p>
                 </div>
               </div>
             </div>

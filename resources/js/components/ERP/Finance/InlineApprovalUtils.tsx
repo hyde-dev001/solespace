@@ -1,6 +1,7 @@
 import React from "react";
 import Swal from "sweetalert2";
 import { useFinanceApi } from "../../../hooks/useFinanceApi";
+import { canApproveExpenses } from "../../../utils/permissions";
 
 // Types for approval functionality
 export interface InlineApprovalProps {

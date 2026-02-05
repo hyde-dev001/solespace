@@ -35,9 +35,10 @@ use App\Http\Controllers\ERP\HR\HRAnalyticsController;
 
 /**
  * HR Module Routes
- * All routes require authentication and HR/shop_owner role
+ * All routes require authentication and permission-based access
+ * Users must have at least one HR-related permission (view-employees, view-attendance, view-payroll)
  */
-Route::prefix('api/hr')->middleware(['auth:user', 'role:HR,shop_owner', 'shop.isolation'])->group(function () {
+Route::prefix('api/hr')->middleware(['auth:user', 'permission:view-employees|view-attendance|view-payroll', 'shop.isolation'])->group(function () {
     // ============================================
     // DASHBOARD & ANALYTICS
     // ============================================
@@ -209,7 +210,7 @@ Route::prefix('api/hr')->middleware(['auth:user', 'role:HR,shop_owner', 'shop.is
  * Staff/Manager Self-Service Routes
  * Protected by: STAFF, MANAGER, shop_owner roles
  */
-Route::prefix('api/staff')->middleware(['auth:user', 'role:STAFF,MANAGER,shop_owner'])->group(function () {
+Route::prefix('api/staff')->middleware(['auth:user', 'old_role:Staff|Manager|Shop Owner'])->group(function () {
     // ============================================
     // SELF-SERVICE ATTENDANCE
     // ============================================

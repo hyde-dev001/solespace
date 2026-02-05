@@ -1252,6 +1252,34 @@ export default function ManagerDashboard() {
                                     </table>
                                 </div>
                             </div>
+
+                            {/* Modal Footer */}
+                            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                                <button
+                                    onClick={() => {
+                                        // Export functionality
+                                        const data = `Date,Time In,Lunch Break,Time Out,Total Hours,Status\nFeb 4, 2026,${loginTime || '--'},${lunchBreakTime || '--'},${logoutTime || '--'},${computeTotalHours(loginTime, logoutTime)},${clockedIn ? 'Active' : logoutTime ? 'Completed' : 'Pending'}\nFeb 3, 2026,08:00:00 AM,12:00:00 PM,05:00:00 PM,9h 0m,Completed`;
+                                        const blob = new Blob([data], { type: 'text/csv' });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `attendance-${new Date().getTime()}.csv`;
+                                        a.click();
+                                    }}
+                                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all duration-200 text-sm flex items-center gap-2 active:scale-95"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Export
+                                </button>
+                                <button
+                                    onClick={() => setShowAttendanceModal(false)}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-all duration-200 text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

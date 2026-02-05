@@ -146,16 +146,18 @@ if (in_array($user->role, ['FINANCE_STAFF', 'FINANCE_MANAGER'])) { /* ... */ }
 - Replace permission checks with `$user->can('permission-name')`
 - Update activity log filtering to use permissions
 
-### Phase 6: Create Admin UI
-- Permission management page for Super Admin
-- Role assignment interface
-- User permission override interface
+### Phase 6: Create Shop Owner Permission Management UI
+- Permission management page for Shop Owners to manage their employees
+- Assign/revoke individual permissions to employees beyond their base role
+- Position templates (Cashier, Bookkeeper, Assistant Manager, etc.)
+- Integrate with existing User Access Control system
 
-### Phase 7: Testing & Cleanup
-- Full regression testing
-- Remove old `role` column migration
-- Remove custom CheckRole middleware
-- Update documentation
+### Phase 7: Testing & Cleanup ✅ COMPLETED
+- ✅ Full regression testing (manual testing with Staff users)
+- ✅ Keep old `role` column (deferred for safety - remove after Feb 28, 2026)
+- ✅ Deprecated custom RoleMiddleware (routes now use Spatie's middleware)
+- ✅ Updated all approval routes to permission-based middleware
+- ✅ Documentation updated
 
 ---
 

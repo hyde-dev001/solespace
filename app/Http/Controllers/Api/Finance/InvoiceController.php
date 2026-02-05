@@ -91,7 +91,7 @@ class InvoiceController extends Controller
     public function show($id)
     {
         $user = Auth::guard('user')->user();
-        $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
+        $shopOwnerId = $user->hasRole('Shop Owner') ? $user->id : $user->shop_owner_id;
         
         // Include job order data when fetching single invoice
         $invoice = Invoice::where('shop_id', $shopOwnerId)
@@ -128,7 +128,7 @@ class InvoiceController extends Controller
 
         try {
             $user = Auth::guard('user')->user();
-            $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
+            $shopOwnerId = $user->hasRole('Shop Owner') ? $user->id : $user->shop_owner_id;
             
             if (!$shopOwnerId) {
                 return response()->json(['error' => 'No shop association found'], 403);
@@ -369,7 +369,7 @@ class InvoiceController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
             
-            $shopOwnerId = $user->role === 'shop_owner' ? $user->id : $user->shop_owner_id;
+            $shopOwnerId = $user->hasRole('Shop Owner') ? $user->id : $user->shop_owner_id;
             
             if (!$shopOwnerId) {
                 return response()->json(['error' => 'No shop association found'], 403);

@@ -172,14 +172,22 @@ class UserController extends Controller
                 \Log::info('User logged in successfully', ['user_id' => $user->id]);
 
                 if ($request->expectsJson()) {
-                    $redirect = match ($user->role) {
-                        'HR' => route('erp.hr'),
-                        'FINANCE' => route('finance.index'),
-                        'CRM' => route('crm.dashboard'),
-                        'MANAGER' => route('erp.manager.dashboard'),
-                        'STAFF' => route('erp.staff.dashboard'),
-                        default => url('/'),
-                    };
+                    // Check both Spatie roles and old role column for backward compatibility
+                    $redirect = url('/'); // Default
+                    $userRole = strtoupper($user->role ?? '');
+                    
+                    // Check Spatie roles first, then fall back to old role column (case-insensitive)
+                    if ($user->hasRole('HR') || $userRole === 'HR') {
+                        $redirect = route('erp.hr');
+                    } elseif ($user->hasAnyRole(['Finance Staff', 'Finance Manager']) || in_array($userRole, ['FINANCE', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+                        $redirect = route('finance.index');
+                    } elseif ($user->hasRole('CRM') || $userRole === 'CRM') {
+                        $redirect = route('crm.dashboard');
+                    } elseif ($user->hasRole('Manager') || $userRole === 'MANAGER') {
+                        $redirect = route('erp.manager.dashboard');
+                    } elseif ($user->hasRole('Staff') || $userRole === 'STAFF') {
+                        $redirect = route('erp.staff.dashboard');
+                    }
 
                     return response()->json([
                         'success' => true,
@@ -199,24 +207,26 @@ class UserController extends Controller
                     return redirect()->route('erp.profile')->with('temporary_password', true);
                 }
 
-                // Role-based landing
-                if ($user->role === 'HR') {
+                // Role-based landing - Check both Spatie roles and old role column (case-insensitive)
+                $userRole = strtoupper($user->role ?? '');
+                
+                if ($user->hasRole('HR') || $userRole === 'HR') {
                     return redirect()->route('erp.hr')->with('success', 'Welcome back!');
                 }
 
-                if ($user->role === 'FINANCE_STAFF' || $user->role === 'FINANCE_MANAGER') {
+                if ($user->hasAnyRole(['Finance Staff', 'Finance Manager']) || in_array($userRole, ['FINANCE', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
                     return redirect()->route('finance.index')->with('success', 'Welcome back!');
                 }
 
-                if ($user->role === 'CRM') {
+                if ($user->hasRole('CRM') || $userRole === 'CRM') {
                     return redirect()->route('crm.dashboard')->with('success', 'Welcome back!');
                 }
 
-                if ($user->role === 'MANAGER') {
+                if ($user->hasRole('Manager') || $userRole === 'MANAGER') {
                     return redirect()->route('erp.manager.dashboard')->with('success', 'Welcome back!');
                 }
 
-                if ($user->role === 'STAFF') {
+                if ($user->hasRole('Staff') || $userRole === 'STAFF') {
                     return redirect()->route('erp.staff.dashboard')->with('success', 'Welcome back!');
                 }
 

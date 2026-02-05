@@ -185,6 +185,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   );
 };
 
+import { canApproveExpenses } from "../../../utils/permissions";
+
 const normalizeExpense = (expense: Expense) => ({
   ...expense,
   amount: Number(expense.amount) || 0,
@@ -194,6 +196,7 @@ const normalizeExpense = (expense: Expense) => ({
 const Expense: React.FC = () => {
   const page = usePage();
   const user = page.props.auth?.user as any;
+  const auth = page.props.auth as any;
   const api = useFinanceApi();
   
   // React Query hooks - automatically handle loading, caching, refetching
@@ -277,15 +280,12 @@ const Expense: React.FC = () => {
 
   // Check if user can approve expenses
   const canUserApprove = () => {
-    if (!user) return false;
-    // Only FINANCE_MANAGER and above can approve
-    return String(user.role || "").toUpperCase() === "FINANCE_MANAGER";
+    return canApproveExpenses(auth);
   };
 
   const canUserPost = () => {
-    if (!user) return false;
-    // Only FINANCE_MANAGER and above can post
-    return String(user.role || "").toUpperCase() === "FINANCE_MANAGER";
+    // Posting typically requires manager-level permissions
+    return canApproveExpenses(auth);
   };
 
   const categoryBreakdown = useMemo(() => {

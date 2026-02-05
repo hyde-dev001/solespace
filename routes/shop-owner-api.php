@@ -21,7 +21,7 @@ use App\Http\Controllers\AuditLogController;
  * Shop Owner Routes
  * All routes require authentication and shop_owner role
  */
-Route::prefix('api/shop-owner')->middleware(['auth:user', 'role:shop_owner', 'shop.isolation'])->group(function () {
+Route::prefix('api/shop-owner')->middleware(['auth:user', 'old_role:Shop Owner', 'shop.isolation'])->group(function () {
     // ============================================
     // AUDIT LOGS (Shop Owner View)
     // ============================================

@@ -183,7 +183,7 @@ Route::middleware('auth:shop_owner')->prefix('shop-owner')->name('shop-owner.')-
     })->name('dashboard');
 
     Route::get('/products', function () {
-        return Inertia::render('ShopOwner/ProductManagementWithVariants');
+        return Inertia::render('ERP/STAFF/ProductManagementWithVariants');
     })->name('products');
 
     Route::get('/orders', function () {
@@ -203,6 +203,16 @@ Route::middleware('auth:shop_owner')->prefix('shop-owner')->name('shop-owner.')-
     Route::delete('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'destroy'])->middleware('shop.isolation')->name('employees.destroy');
     Route::post('/employees/{employee}/suspend', [\App\Http\Controllers\EmployeeController::class, 'suspend'])->middleware('shop.isolation')->name('employees.suspend');
     Route::post('/employees/{employee}/activate', [\App\Http\Controllers\EmployeeController::class, 'activate'])->middleware('shop.isolation')->name('employees.activate');
+    
+    // Permission Management Routes (Phase 6)
+    Route::get('/permissions/available', [UserAccessControlController::class, 'getAvailablePermissions'])->name('permissions.available');
+    Route::get('/employees/{userId}/permissions', [UserAccessControlController::class, 'getEmployeePermissions'])->name('employees.permissions.get');
+    Route::post('/employees/{userId}/permissions', [UserAccessControlController::class, 'updateEmployeePermissions'])->name('employees.permissions.update');
+    Route::post('/employees/{userId}/permissions/sync', [UserAccessControlController::class, 'syncEmployeePermissions'])->name('employees.permissions.sync');
+    
+    // Position Templates Routes (Phase 6+)
+    Route::get('/position-templates', [UserAccessControlController::class, 'getPositionTemplates'])->name('position-templates.index');
+    Route::post('/employees/{userId}/apply-template', [UserAccessControlController::class, 'applyPositionTemplate'])->name('employees.apply-template');
 });
 
 /**
@@ -259,10 +269,11 @@ Route::prefix('api/products')->group(function () {
 // Session-backed API endpoints for finance (allow web-session authenticated users)
 // CONSOLIDATED: All finance routes under /api/finance/session
 Route::middleware('auth:user')->prefix('api/finance/session')->group(function () {
-    // REMOVED: Chart of Accounts - System auto-creates accounts for SMEs
-    // Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
-    // Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
-    // Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Api\Finance\AccountController::class, 'ledger']);
+    // Chart of Accounts - Re-enabled for frontend compatibility
+    Route::get('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'index']);
+    Route::post('accounts', [\App\Http\Controllers\Api\Finance\AccountController::class, 'store']);
+    Route::get('accounts/{id}', [\App\Http\Controllers\Api\Finance\AccountController::class, 'show']);
+    Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Api\Finance\AccountController::class, 'ledger']);
 
     // Expenses
     Route::get('expenses', [FinanceExpenseController::class, 'index']);
@@ -277,8 +288,8 @@ Route::middleware('auth:user')->prefix('api/finance/session')->group(function ()
     Route::get('expenses/{id}/receipt/download', [FinanceExpenseController::class, 'downloadReceipt']);
     Route::delete('expenses/{id}/receipt', [FinanceExpenseController::class, 'deleteReceipt']);
     
-    // Expense approval/posting (managers only)
-    Route::middleware('role:FINANCE_MANAGER,MANAGER')->group(function () {
+    // Expense approval/posting (users with approval permission)
+    Route::middleware('permission:approve-expenses')->group(function () {
         Route::post('expenses/{id}/approve', [FinanceExpenseController::class, 'approve']);
         Route::post('expenses/{id}/reject', [FinanceExpenseController::class, 'reject']);
         Route::post('expenses/{id}/post', [FinanceExpenseController::class, 'post']);
@@ -335,14 +346,14 @@ Route::middleware('auth:user')->prefix('api/finance/session')->group(function ()
         Route::get('history', [\App\Http\Controllers\ApprovalController::class, 'getHistory']);
         Route::get('{id}/history', [\App\Http\Controllers\ApprovalController::class, 'getApprovalHistory']);
 
-        // Only Finance Manager can approve/reject transactions
-        Route::middleware('role:FINANCE_MANAGER,MANAGER')->group(function () {
+        // Only users with approval permission can approve/reject transactions
+        Route::middleware('permission:approve-expenses')->group(function () {
             Route::post('{id}/approve', [\App\Http\Controllers\ApprovalController::class, 'approve']);
             Route::post('{id}/reject', [\App\Http\Controllers\ApprovalController::class, 'reject']);
         });
 
         // Delegation routes (managers only)
-        Route::middleware('role:FINANCE_MANAGER,MANAGER')->group(function () {
+        Route::middleware('role:Manager')->group(function () {
             Route::get('delegations', [\App\Http\Controllers\ApprovalController::class, 'getDelegations']);
             Route::post('delegations', [\App\Http\Controllers\ApprovalController::class, 'createDelegation']);
             Route::post('delegations/{id}/deactivate', [\App\Http\Controllers\ApprovalController::class, 'deactivateDelegation']);
@@ -429,7 +440,7 @@ Route::prefix('training')->name('training.')->middleware('auth:user')->group(fun
 });
 
 // HR and ERP routes
-Route::middleware(['auth:user', 'role:HR'])->get('/erp/hr', function () {
+Route::middleware(['auth:user', 'permission:view-employees|view-attendance|view-payroll'])->get('/erp/hr', function () {
     if (Auth::guard('user')->user()?->force_password_change) {
         return redirect()->route('erp.profile');
     }
@@ -442,7 +453,7 @@ Route::get('/erp/hr/audit-logs', function () {
         return redirect()->route('erp.profile');
     }
     return Inertia::render('ERP/HR/AuditLogs');
-})->middleware(['auth:user', 'role:HR'])->name('erp.hr.audit-logs');
+})->middleware(['auth:user', 'permission:view-hr-audit-logs'])->name('erp.hr.audit-logs');
 
 Route::middleware(['auth:user'])->group(function () {
     Route::get('/erp/profile', [UserProfileController::class, 'show'])->name('erp.profile');
@@ -450,7 +461,7 @@ Route::middleware(['auth:user'])->group(function () {
 });
 
 // Finance pages
-Route::prefix('finance')->name('finance.')->middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->group(function () {
+Route::prefix('finance')->name('finance.')->middleware(['auth:user', 'permission:view-expenses|view-invoices'])->group(function () {
     Route::get('/', function () {
         if (Auth::guard('user')->user()?->force_password_change) {
             return redirect()->route('erp.profile');
@@ -472,7 +483,7 @@ Route::get('/erp/finance/audit-logs', function () {
         return redirect()->route('erp.profile');
     }
     return Inertia::render('ERP/Finance/AuditLogs');
-})->middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->name('erp.finance.audit-logs');
+})->middleware(['auth:user', 'permission:view-finance-audit-logs'])->name('erp.finance.audit-logs');
 
 // Approval Workflow page removed (frontend page deleted)
 
@@ -481,10 +492,10 @@ Route::get('/create-invoice', function () {
         return redirect()->route('erp.profile');
     }
     return redirect('/finance?section=create-invoice');
-})->middleware(['auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER'])->name('finance.create-invoice');
+})->middleware(['auth:user', 'permission:create-invoices'])->name('finance.create-invoice');
 
 // CRM routes
-Route::prefix('crm')->name('crm.')->middleware(['auth:user', 'role:CRM'])->group(function () {
+Route::prefix('crm')->name('crm.')->middleware(['auth:user', 'permission:view-customers|view-leads'])->group(function () {
     Route::get('/', function () {
         if (Auth::guard('user')->user()?->force_password_change) {
             return redirect()->route('erp.profile');
@@ -512,7 +523,7 @@ Route::prefix('crm')->name('crm.')->middleware(['auth:user', 'role:CRM'])->group
 });
 
 // MANAGER routes (only MANAGER can access)
-Route::prefix('erp/manager')->name('erp.manager.')->middleware(['auth:user', 'role:MANAGER'])->group(function () {
+Route::prefix('erp/manager')->name('erp.manager.')->middleware(['auth:user', 'role:Manager'])->group(function () {
     Route::get('/dashboard', function () {
         if (Auth::guard('user')->user()?->force_password_change) {
             return redirect()->route('erp.profile');
@@ -596,7 +607,7 @@ Route::prefix('erp/staff')->name('erp.staff.')->middleware(['auth:user', 'manage
         if (Auth::guard('user')->user()?->force_password_change) {
             return redirect()->route('erp.profile');
         }
-        return Inertia::render('ERP/STAFF/productUpload');
+        return Inertia::render('ERP/STAFF/ProductManagement');
     })->name('products');
     Route::get('/payments', function () {
         return redirect()->route('erp.staff.products');
@@ -696,7 +707,7 @@ Route::prefix('superAdmin')->name('superAdmin.')->middleware('auth:super_admin')
 // });
 
 // Manager API Routes
-Route::prefix('api/manager')->name('api.manager.')->middleware(['auth:user', 'role:MANAGER,FINANCE_MANAGER,SUPER_ADMIN'])->group(function () {
+Route::prefix('api/manager')->name('api.manager.')->middleware(['web', 'auth:user', 'role:Manager'])->group(function () {
     Route::get('/dashboard/stats', [ManagerController::class, 'getDashboardStats'])->name('dashboard.stats');
     Route::get('/staff-performance', [ManagerController::class, 'getStaffPerformance'])->name('staff-performance');
     Route::get('/analytics', [ManagerController::class, 'getAnalytics'])->name('analytics');
@@ -713,13 +724,13 @@ Route::prefix('api/leave')->name('api.leave.')->middleware(['auth:user'])->group
     
     // Manager routes
     Route::get('/pending/all', [LeaveController::class, 'pending'])
-        ->middleware('role:MANAGER,FINANCE_MANAGER,SUPER_ADMIN,shop_owner')
+        ->middleware('old_role:Manager|Finance Manager|Super Admin|Shop Owner')
         ->name('pending');
     Route::post('/{id}/approve', [LeaveController::class, 'approve'])
-        ->middleware('role:MANAGER,FINANCE_MANAGER,SUPER_ADMIN,shop_owner')
+        ->middleware('old_role:Manager|Finance Manager|Super Admin|Shop Owner')
         ->name('approve');
     Route::post('/{id}/reject', [LeaveController::class, 'reject'])
-        ->middleware('role:MANAGER,FINANCE_MANAGER,SUPER_ADMIN,shop_owner')
+        ->middleware('old_role:Manager|Finance Manager|Super Admin|Shop Owner')
         ->name('reject');
 });
 
@@ -734,4 +745,6 @@ Route::post('/api/shop/register-full', [ShopRegistrationController::class, 'stor
 require __DIR__.'/hr-api.php';
 require __DIR__.'/finance-api.php';
 require __DIR__.'/shop-owner-api.php';
+require __DIR__.'/permission-audit-api.php';
+
 

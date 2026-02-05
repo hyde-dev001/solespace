@@ -396,6 +396,17 @@ const staffItems: NavItem[] = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        <polyline points="3.27 6.96 12 12 20.73 6.96"></polyline>
+        <line x1="12" y1="22" x2="12" y2="12"></line>
+      </svg>
+    ),
+    name: "Product",
+    route: "erp.staff.products",
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="7" r="3"></circle>
         <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
       </svg>
@@ -409,6 +420,7 @@ const AppSidebar_ERP: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered, openSubmenu, toggleSubmenu } = useSidebar();
   const { url, props } = usePage();
   const role = (props as any)?.auth?.user?.role;
+  const permissions = (props as any)?.auth?.permissions || [];
 
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>({});
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -475,7 +487,7 @@ const AppSidebar_ERP: React.FC = () => {
     "erp.staff.job-orders": "/erp/staff/job-orders",
     "erp.staff.job-orders-repair": "/erp/staff/job-orders-repair",
     "erp.staff.repair-status": "/erp/staff/repair-status",
-    
+    "erp.staff.products": "/erp/staff/products",
     "erp.staff.attendance": "/erp/staff/attendance",
     "erp.staff.customers": "/erp/staff/customers",
   };
@@ -525,20 +537,77 @@ const AppSidebar_ERP: React.FC = () => {
     toggleSubmenu(key);
   };
 
-  // Filter finance items based on user role
+  // Filter finance items based on user permissions
   const getFilteredFinanceItems = () => {
     return financeItems.filter((item) => {
-      // Allow approval workflow only for FINANCE_MANAGER
-      if (item.route === "approvals.index") {
-        return role === "FINANCE_MANAGER";
+      // Dashboard - show if user has any finance permission
+      if (item.route === "finance.dashboard") {
+        return hasFinanceAccess();
       }
-      // Hide audit logs from FINANCE_STAFF
+      
+      // Invoices - requires invoice permissions
+      if (item.route === "finance.index" && item.params?.section === "invoice-generation") {
+        return permissions.includes('view-invoices') || permissions.includes('create-invoices') || 
+               permissions.includes('edit-invoices') || permissions.includes('delete-invoices') ||
+               permissions.includes('send-invoices');
+      }
+      
+      // Expenses - requires expense permissions
+      if (item.route === "finance.index" && item.params?.section === "expense-tracking") {
+        return permissions.includes('view-expenses') || permissions.includes('create-expenses') || 
+               permissions.includes('edit-expenses') || permissions.includes('delete-expenses') ||
+               permissions.includes('approve-expenses');
+      }
+      
+      // Pricing Approvals - requires pricing permissions (view/edit-pricing or approve-expenses)
+      if (item.name === "Pricing Approvals") {
+        return permissions.includes('view-pricing') || permissions.includes('edit-pricing') || 
+               permissions.includes('manage-service-pricing') || permissions.includes('approve-expenses');
+      }
+      
+      // Audit logs - requires audit log permission
       if (item.route === "erp.finance.audit-logs") {
-        return role === "FINANCE_MANAGER";
+        return permissions.includes('view-all-audit-logs') || permissions.includes('view-finance-audit-logs');
       }
-      // Show all other finance items for any finance role
+      
+      // Show other items by default
       return true;
     });
+  };
+
+  // Check if user has any finance permissions
+  const hasFinanceAccess = () => {
+    const financePermissions = [
+      'view-expenses', 'create-expenses', 'edit-expenses', 'delete-expenses', 'approve-expenses',
+      'view-invoices', 'create-invoices', 'edit-invoices', 'delete-invoices', 'send-invoices',
+      'view-finance-audit-logs'
+    ];
+    return financePermissions.some(perm => permissions.includes(perm));
+  };
+
+  // Check if user has any HR permissions
+  const hasHRAccess = () => {
+    const hrPermissions = [
+      'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
+      'view-attendance', 'mark-attendance', 'edit-attendance',
+      'view-leave-requests', 'approve-leave-requests', 'manage-leave-requests',
+      'view-payroll', 'generate-payroll', 'edit-payroll', 'approve-payroll',
+      'view-performance', 'edit-performance', 'manage-performance',
+      'view-training', 'create-training', 'edit-training',
+      'view-hr-audit-logs'
+    ];
+    return hrPermissions.some(perm => permissions.includes(perm));
+  };
+
+  // Check if user has any CRM permissions
+  const hasCRMAccess = () => {
+    const crmPermissions = [
+      'view-crm-dashboard', 'view-opportunities', 'create-opportunities', 'edit-opportunities',
+      'view-leads', 'create-leads', 'edit-leads', 'delete-leads',
+      'view-customers', 'create-customers', 'edit-customers', 'delete-customers',
+      'view-crm-audit-logs'
+    ];
+    return crmPermissions.some(perm => permissions.includes(perm));
   };
 
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => {
@@ -707,7 +776,7 @@ const AppSidebar_ERP: React.FC = () => {
         </Link>
       </div>
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        {role === "HR" && (
+        {hasHRAccess() && (
           <nav className="mb-6">
             <div className="flex flex-col gap-4">
               <div>
@@ -729,7 +798,7 @@ const AppSidebar_ERP: React.FC = () => {
             </div>
           </nav>
         )}
-        {(role === "FINANCE_STAFF" || role === "FINANCE_MANAGER") && (
+        {hasFinanceAccess() && (
           <nav className="mb-6">
             <div className="flex flex-col gap-4">
               <div>
@@ -751,7 +820,7 @@ const AppSidebar_ERP: React.FC = () => {
             </div>
           </nav>
         )}
-        {role === "CRM" && (
+        {hasCRMAccess() && (
           <nav className="mb-6">
             <div className="flex flex-col gap-4">
               <div>
@@ -839,7 +908,7 @@ const AppSidebar_ERP: React.FC = () => {
             </div>
           </nav>
         )}
-        {othersItems.length > 0 && (role === "FINANCE_STAFF" || role === "FINANCE_MANAGER") && (
+        {othersItems.length > 0 && hasFinanceAccess() && (
           <nav className="mb-6">
             <div className="flex flex-col gap-4">
               <div>

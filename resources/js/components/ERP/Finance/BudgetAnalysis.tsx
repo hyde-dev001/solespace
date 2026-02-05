@@ -176,7 +176,7 @@ const BudgetAnalysis: React.FC = () => {
         const response = await api.get('/api/finance/budgets');
         
         if (!response.ok) {
-          setLoadError('Unable to load budgets - you may not have permission. Please ensure you have the FINANCE role.');
+          setLoadError('Unable to load budgets - you may not have permission. Please ensure you have Finance permissions.');
           setBudgets([]);
           setIsLoading(false);
           return;

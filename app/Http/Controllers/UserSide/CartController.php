@@ -71,10 +71,8 @@ class CartController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Check if user is ERP staff
-        $userRole = strtoupper($user->role ?? '');
-        $erpRoles = ['HR', 'FINANCE_STAFF', 'FINANCE_MANAGER', 'FINANCE', 'CRM', 'MANAGER', 'STAFF'];
-        if (in_array($userRole, $erpRoles)) {
+        // Check if user is ERP staff (ERP roles cannot use cart)
+        if ($user->hasAnyRole(['HR', 'Finance Staff', 'Finance Manager', 'CRM', 'Manager', 'Staff'])) {
             return response()->json(['error' => 'ERP staff cannot add items to cart'], 403);
         }
 

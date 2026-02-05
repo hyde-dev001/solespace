@@ -21,12 +21,15 @@ return new class extends Migration {
                 $table->enum('status', ['draft', 'sent', 'posted', 'paid', 'overdue', 'cancelled'])->default('draft');
                 $table->unsignedBigInteger('journal_entry_id')->nullable();
                 $table->text('notes')->nullable();
+                $table->unsignedBigInteger('job_order_id')->nullable();
                 $table->json('meta')->nullable();
                 $table->unsignedBigInteger('shop_id')->nullable();
                 $table->timestamps();
                 $table->softDeletes();
 
                 $table->foreign('journal_entry_id')->references('id')->on('finance_journal_entries')->onDelete('set null');
+                $table->foreign('job_order_id')->references('id')->on('orders')->onDelete('set null');
+                $table->index('job_order_id');
                 $table->index('reference');
                 $table->index('status');
                 $table->index('date');

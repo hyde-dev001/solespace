@@ -25,12 +25,12 @@ use App\Http\Controllers\Api\Finance\ReportController;
 use App\Http\Controllers\ERP\HR\AuditLogController;
 
 /**
- * Finance Module Routes - Audit Logs (FINANCE_MANAGER only)
- * Restricted to managers for security/compliance
+ * Finance Module Routes - Audit Logs (requires view-finance-audit-logs permission)
+ * Restricted to users with audit log permissions for security/compliance
  */
-Route::prefix('api/finance')->middleware(['web', 'auth:user', 'role:FINANCE_MANAGER', 'shop.isolation'])->group(function () {
+Route::prefix('api/finance')->middleware(['web', 'auth:user', 'permission:view-finance-audit-logs', 'shop.isolation'])->group(function () {
     // ============================================
-    // AUDIT LOGS (FINANCE_MANAGER ONLY)
+    // AUDIT LOGS (permission: view-finance-audit-logs)
     // ============================================
     Route::prefix('audit-logs')->group(function () {
         Route::get('/', [AuditLogController::class, 'index'])->name('finance.audit.index');
@@ -42,9 +42,9 @@ Route::prefix('api/finance')->middleware(['web', 'auth:user', 'role:FINANCE_MANA
 
 /**
  * Finance Module Routes - General Operations
- * Accessible by both FINANCE_STAFF and FINANCE_MANAGER
+ * Accessible by users with any Finance permissions
  */
-Route::prefix('api/finance')->middleware(['web', 'auth:user', 'role:FINANCE_STAFF,FINANCE_MANAGER', 'shop.isolation'])->group(function () {
+Route::prefix('api/finance')->middleware(['web', 'auth:user', 'permission:view-expenses|view-invoices|view-finance-audit-logs', 'shop.isolation'])->group(function () {
 
     // ============================================
     // CHART OF ACCOUNTS
@@ -68,8 +68,8 @@ Route::prefix('api/finance')->middleware(['web', 'auth:user', 'role:FINANCE_STAF
         Route::patch('/{id}', [JournalEntryController::class, 'update'])->name('finance.journal.update');
         Route::delete('/{id}', [JournalEntryController::class, 'destroy'])->name('finance.journal.destroy');
         
-        // Finance Manager only actions
-        Route::middleware('role:FINANCE_MANAGER')->group(function () {
+        // Posting actions (requires approve-expenses permission)
+        Route::middleware('permission:approve-expenses')->group(function () {
             Route::post('/{id}/post', [JournalEntryController::class, 'post'])->name('finance.journal.post');
             Route::post('/{id}/reverse', [JournalEntryController::class, 'reverse'])->name('finance.journal.reverse');
         });
@@ -86,8 +86,8 @@ Route::prefix('api/finance')->middleware(['web', 'auth:user', 'role:FINANCE_STAF
         Route::patch('/{id}', [ExpenseController::class, 'update'])->name('finance.expenses.update');
         Route::delete('/{id}', [ExpenseController::class, 'destroy'])->name('finance.expenses.destroy');
         
-        // Finance Manager only actions
-        Route::middleware('role:FINANCE_MANAGER')->group(function () {
+        // Approval actions (requires approve-expenses permission)
+        Route::middleware('permission:approve-expenses')->group(function () {
             Route::post('/{id}/approve', [ExpenseController::class, 'approve'])->name('finance.expenses.approve');
             Route::post('/{id}/reject', [ExpenseController::class, 'reject'])->name('finance.expenses.reject');
             Route::post('/{id}/post', [ExpenseController::class, 'post'])->name('finance.expenses.post');
@@ -106,8 +106,8 @@ Route::prefix('api/finance')->middleware(['web', 'auth:user', 'role:FINANCE_STAF
         Route::patch('/{id}', [InvoiceController::class, 'update'])->name('finance.invoices.update');
         Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('finance.invoices.destroy');
         
-        // Finance Manager only - post to ledger
-        Route::middleware('role:FINANCE_MANAGER')->post('/{id}/post', [InvoiceController::class, 'post'])->name('finance.invoices.post');
+        // Post to ledger (requires approve-expenses permission)
+        Route::middleware('permission:approve-expenses')->post('/{id}/post', [InvoiceController::class, 'post'])->name('finance.invoices.post');
     });
 
 

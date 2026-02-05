@@ -58,7 +58,7 @@ class AuthController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (!Auth::guard('user')->attempt($request->only('email', 'password'))) {
             return response()->json([
                 'message' => [
                     'icon' => 'error',
@@ -68,7 +68,7 @@ class AuthController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         
-        $user = Auth::user();
+        $user = Auth::guard('user')->user();
         $token = $user->createToken('auth_token', [ $request->ip() ])->plainTextToken;
 
         return response()->json([

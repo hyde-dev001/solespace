@@ -21,6 +21,31 @@ export default function HRPage() {
   const [error, setError] = useState<string | null>(null);
   const { auth, url } = usePage().props as any;
   const userRole = auth?.user?.role;
+  const permissions = auth?.permissions || [];
+
+  // Check if user has any HR permissions
+  const hasHRAccess = () => {
+    const hrPermissions = [
+      'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
+      'view-attendance', 'mark-attendance', 'edit-attendance',
+      'view-leave-requests', 'approve-leave-requests', 'manage-leave-requests',
+      'view-payroll', 'generate-payroll', 'edit-payroll', 'approve-payroll',
+      'view-performance', 'edit-performance', 'manage-performance',
+      'view-training', 'create-training', 'edit-training',
+      'view-hr-audit-logs'
+    ];
+    const hasAccess = userRole === 'Manager' || hrPermissions.some(perm => permissions.includes(perm));
+    
+    // Debug: Log user info (remove this after testing)
+    console.log('HR Access Debug:', {
+      userRole,
+      permissions,
+      hasAccess,
+      matchingPermissions: hrPermissions.filter(perm => permissions.includes(perm))
+    });
+    
+    return hasAccess;
+  };
 
   const section: Section = useMemo(() => {
     // Extract section from the full URL including query parameters
@@ -76,7 +101,7 @@ export default function HRPage() {
     }
   };
 
-  if (userRole !== "HR") {
+  if (!hasHRAccess()) {
     return (
       <AppLayoutERP>
         <div className="max-w-xl mx-auto mt-24 text-center p-8 bg-white dark:bg-gray-900 rounded-xl shadow">

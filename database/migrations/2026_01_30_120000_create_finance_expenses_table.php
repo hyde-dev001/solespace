@@ -23,10 +23,18 @@ return new class extends Migration {
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->text('approval_notes')->nullable();
+            $table->string('receipt_path')->nullable();
+            $table->string('receipt_original_name')->nullable();
+            $table->string('receipt_mime_type')->nullable();
+            $table->integer('receipt_size')->nullable();
+            $table->unsignedBigInteger('job_order_id')->nullable();
             $table->unsignedBigInteger('shop_id')->nullable();
             $table->json('meta')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            
+            $table->foreign('job_order_id')->references('id')->on('orders')->onDelete('set null');
+            $table->index('job_order_id');
         });
     }
 

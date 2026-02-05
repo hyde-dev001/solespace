@@ -20,6 +20,7 @@ return new class extends Migration
             
             // Salary components
             $table->decimal('base_salary', 12, 2);
+            $table->decimal('gross_salary', 12, 2);
             $table->decimal('allowances', 12, 2)->default(0);
             $table->decimal('deductions', 12, 2)->default(0);
             $table->decimal('overtime_pay', 12, 2)->default(0);

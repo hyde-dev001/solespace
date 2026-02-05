@@ -88,6 +88,84 @@ const BuildingStorefrontIcon: React.FC<{ className?: string }> = ({ className })
   </svg>
 );
 
+const ArrowUpIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+  </svg>
+);
+
+const ArrowDownIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+  </svg>
+);
+
+interface MetricData {
+  title: string;
+  value: number;
+  change: number;
+  changeType: 'increase' | 'decrease';
+  icon: React.ComponentType<{ className?: string }>;
+  color: 'success' | 'error' | 'warning' | 'info';
+  description: string;
+}
+
+// Professional Metric Card Component
+const MetricCard: React.FC<MetricData> = ({
+  title,
+  value,
+  change,
+  changeType,
+  icon: Icon,
+  color,
+  description
+}) => {
+  const getColorClasses = () => {
+    switch (color) {
+      case 'success': return 'from-green-500 to-emerald-600';
+      case 'error': return 'from-red-500 to-rose-600';
+      case 'warning': return 'from-yellow-500 to-orange-600';
+      case 'info': return 'from-blue-500 to-indigo-600';
+      default: return 'from-gray-500 to-gray-600';
+    }
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-500 hover:shadow-xl hover:border-gray-300 hover:-translate-y-1 dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-gray-700">
+      {/* Animated background gradient */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${getColorClasses()} opacity-0 transition-opacity duration-500 group-hover:opacity-5`} />
+
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`flex items-center justify-center w-14 h-14 bg-gradient-to-br ${getColorClasses()} rounded-2xl shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-6`}>
+            <Icon className="text-white size-7 drop-shadow-sm" />
+          </div>
+
+          <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${changeType === 'increase'
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            }`}>
+            {changeType === 'increase' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />}
+            {Math.abs(change)}%
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {title}
+          </p>
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
+            {value.toLocaleString()}
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ShopOwnerAuditLogs() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -189,63 +267,58 @@ export default function ShopOwnerAuditLogs() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <ShieldCheckIcon className="w-10 h-10 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-800">Activity Audit Logs</h1>
           </div>
           <p className="text-gray-600 mt-2">
             Complete audit trail of all activities in your business
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            📊 Track products, expenses, employees, orders, and all business operations
+            Track products, expenses, employees, orders, and all business operations
           </p>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-lg text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Logs</p>
-                  <p className="text-3xl font-bold">{stats.total_logs.toLocaleString()}</p>
-                </div>
-                <DocumentTextIcon className="w-12 h-12 text-blue-200" />
-              </div>
-            </div>
+            <MetricCard
+              title="Total Logs"
+              value={stats.total_logs}
+              change={12}
+              changeType="increase"
+              icon={DocumentTextIcon}
+              color="info"
+              description="All recorded activities"
+            />
 
-            <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-lg shadow-lg text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Last 24 Hours</p>
-                  <p className="text-3xl font-bold">{stats.logs_last_24h}</p>
-                </div>
-                <ClockIcon className="w-12 h-12 text-green-200" />
-              </div>
-            </div>
+            <MetricCard
+              title="Last 24 Hours"
+              value={stats.logs_last_24h}
+              change={8}
+              changeType="increase"
+              icon={ClockIcon}
+              color="success"
+              description="Recent activity count"
+            />
 
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-lg shadow-lg text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-emerald-100 text-sm font-medium">Created</p>
-                  <p className="text-3xl font-bold">{stats.event_counts.created || 0}</p>
-                </div>
-                <div className="w-12 h-12 bg-emerald-400 rounded-full flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">+</span>
-                </div>
-              </div>
-            </div>
+            <MetricCard
+              title="Created"
+              value={stats.event_counts.created || 0}
+              change={15}
+              changeType="increase"
+              icon={ShieldCheckIcon}
+              color="success"
+              description="New items created"
+            />
 
-            <div className="bg-gradient-to-br from-sky-500 to-sky-600 p-6 rounded-lg shadow-lg text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sky-100 text-sm font-medium">Updated</p>
-                  <p className="text-3xl font-bold">{stats.event_counts.updated || 0}</p>
-                </div>
-                <div className="w-12 h-12 bg-sky-400 rounded-full flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">↻</span>
-                </div>
-              </div>
-            </div>
+            <MetricCard
+              title="Updated"
+              value={stats.event_counts.updated || 0}
+              change={5}
+              changeType="increase"
+              icon={BuildingStorefrontIcon}
+              color="warning"
+              description="Items modified"
+            />
           </div>
         )}
 
@@ -373,10 +446,10 @@ export default function ShopOwnerAuditLogs() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
                             onClick={() => viewLogDetails(log)}
-                            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 transition"
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-lg transition"
+                            title="View details"
                           >
-                            <EyeIcon className="w-4 h-4" />
-                            <span className="text-sm font-medium">View</span>
+                            <EyeIcon className="w-5 h-5" />
                           </button>
                         </td>
                       </tr>

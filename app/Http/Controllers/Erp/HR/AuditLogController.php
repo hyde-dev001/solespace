@@ -17,10 +17,16 @@ class AuditLogController extends Controller
      */
     public function index(Request $request)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        // Managers have all permissions, others need specific audit log permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
+            return response()->json(['error' => 'You don\'t have permission to access audit logs'], 403);
         }
 
         $shopOwnerId = $user->shop_owner_id;
@@ -115,10 +121,15 @@ class AuditLogController extends Controller
      */
     public function statistics(Request $request)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
+            return response()->json(['error' => 'No permission to access audit log stats'], 403);
         }
 
         $shopOwnerId = $user->shop_owner_id;
@@ -141,9 +152,14 @@ class AuditLogController extends Controller
      */
     public function entityHistory(Request $request)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -181,9 +197,14 @@ class AuditLogController extends Controller
      */
     public function userActivity(Request $request, $userId)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -229,9 +250,14 @@ class AuditLogController extends Controller
      */
     public function employeeActivity(Request $request, $employeeId)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -304,9 +330,14 @@ class AuditLogController extends Controller
      */
     public function export(Request $request)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -383,9 +414,14 @@ class AuditLogController extends Controller
      */
     public function filterOptions(Request $request)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -435,9 +471,14 @@ class AuditLogController extends Controller
      */
     public function show($id)
     {
-        // Authorization check
+        // Authorization check - use permission instead of hardcoded roles
         $user = auth()->user();
-        if (!$user || !in_array($user->role, ['HR', 'shop_owner', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Check if user has permission to view audit logs
+        if (!$user->hasRole('Manager') && !$user->can('view-finance-audit-logs') && !$user->can('view-hr-audit-logs') && !$user->can('view-all-audit-logs')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

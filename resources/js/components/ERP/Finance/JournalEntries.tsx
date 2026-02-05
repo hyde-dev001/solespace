@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { usePage } from '@inertiajs/react';
 import { useFinanceApi } from "../../../hooks/useFinanceApi";
 import { InlineApprovalActions, getApprovalStatusBadge, ApprovalLimitInfo } from "./InlineApprovalUtils";
+import { canApproveExpenses } from "../../../utils/permissions";
 
 type JournalEntryStatus = "draft" | "posted" | "void";
 type TaxCategory = "GST" | "VAT" | "No Tax" | "Exempt";
@@ -331,15 +332,14 @@ const StatusBadge: React.FC<{ status: JournalEntryStatus }> = ({ status }) => {
 export const JournalEntries: React.FC<{ entries?: JournalEntry[] }> = ({ entries }) => {
 	const page = usePage();
 	const user = page.props.auth?.user as any;
+	const auth = page.props.auth as any;
 
 	const canUserPost = () => {
-		if (!user) return false;
-		return String(user.role || "").toUpperCase() === "FINANCE_MANAGER";
+		return canApproveExpenses(auth);
 	};
 
 	const canUserReverse = () => {
-		if (!user) return false;
-		return String(user.role || "").toUpperCase() === "FINANCE_MANAGER";
+		return canApproveExpenses(auth);
 	};
 	
 	const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(entries && entries.length > 0 ? entries : []);
@@ -369,7 +369,6 @@ export const JournalEntries: React.FC<{ entries?: JournalEntry[] }> = ({ entries
 	const [isLoading, setIsLoading] = useState(true);
 
 	// fetch accounts and journal entries from API
-	const { auth } = usePage().props as any;
 	const isAuthenticated = Boolean(auth && auth.user);
 	const api = useFinanceApi();
 

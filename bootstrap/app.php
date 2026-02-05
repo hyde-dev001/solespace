@@ -30,7 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'super_admin.auth' => \App\Http\Middleware\SuperAdminAuth::class,
             'super_admin.role' => \App\Http\Middleware\CheckSuperAdminRole::class,
             'shop.isolation' => \App\Http\Middleware\ShopIsolationMiddleware::class,
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'old_role' => \App\Http\Middleware\RoleMiddleware::class, // Keep for rollback
             'gate.erp.access' => \App\Http\Middleware\GateErpAccess::class,
             'manager.staff' => \App\Http\Middleware\CheckManagerStaffAccess::class,
         ]);

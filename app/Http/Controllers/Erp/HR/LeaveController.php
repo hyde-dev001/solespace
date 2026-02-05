@@ -31,7 +31,7 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        if (!$user->can('view-employees') && !$user->can('approve-timeoff')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -90,7 +90,8 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -305,7 +306,8 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -323,7 +325,8 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -372,7 +375,8 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -407,20 +411,20 @@ class LeaveController extends Controller
         // Security Check 1: Shop Isolation (already enforced by forShopOwner scope)
         
         // Security Check 2: Role Validation
-        $allowedRoles = ['HR', 'shop_owner', 'Manager'];
-        if (!in_array($user->role, $allowedRoles)) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized leave approval attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role,
+                'user_role' => $user->getRoleNames()->first(),
                 'leave_request_id' => $id
             ]);
             return response()->json([
-                'error' => 'Unauthorized. Only HR, shop owners, or managers can approve leave requests.'
+                'error' => 'Unauthorized. Only Managers or users with HR permissions can approve leave requests.'
             ], 403);
         }
 
         // Security Check 3: Manager Authority Validation
-        if ($user->role === 'Manager') {
+        if ($user->hasRole('Manager')) {
             $employee = Employee::find($user->id);
             if (!$employee || !$this->canManagerApprove($employee, $leaveRequest->employee_id)) {
                 \Log::warning('Manager attempted to approve leave for non-direct report', [
@@ -534,20 +538,20 @@ class LeaveController extends Controller
         // Security Check 1: Shop Isolation (already enforced by forShopOwner scope)
         
         // Security Check 2: Role Validation
-        $allowedRoles = ['HR', 'shop_owner', 'Manager'];
-        if (!in_array($user->role, $allowedRoles)) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized leave rejection attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role,
+                'user_role' => $user->getRoleNames()->first(),
                 'leave_request_id' => $id
             ]);
             return response()->json([
-                'error' => 'Unauthorized. Only HR, shop owners, or managers can reject leave requests.'
+                'error' => 'Unauthorized. Only Managers or users with HR permissions can reject leave requests.'
             ], 403);
         }
 
         // Security Check 3: Manager Authority Validation
-        if ($user->role === 'Manager') {
+        if ($user->hasRole('Manager')) {
             $employee = Employee::find($user->id);
             if (!$employee || !$this->canManagerApprove($employee, $leaveRequest->employee_id)) {
                 \Log::warning('Manager attempted to reject leave for non-direct report', [
@@ -605,7 +609,8 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -639,7 +644,8 @@ class LeaveController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

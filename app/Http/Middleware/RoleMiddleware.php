@@ -27,27 +27,95 @@ class RoleMiddleware
     {
         $user = $request->user();
 
+        // DEBUG: Log authentication attempt
+        \Log::debug('RoleMiddleware - Auth Check', [
+            'path' => $request->path(),
+            'is_authenticated' => $user ? true : false,
+            'required_roles' => $roles,
+        ]);
+
         // If no user is authenticated, deny access
         if (!$user) {
+            \Log::debug('RoleMiddleware - NO USER AUTHENTICATED');
             return response()->json([
                 'message' => 'Unauthenticated',
                 'error' => 'UNAUTHENTICATED'
             ], Response::HTTP_UNAUTHORIZED);
         }
 
+        // DEBUG: Log the check
+        \Log::debug('RoleMiddleware - User Details', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'user_role_column' => $user->role,
+            'required_roles' => $roles,
+            'user_spatie_roles' => $user->getRoleNames()->toArray() ?? [],
+        ]);
+
         // ERP modules are restricted to explicit handler roles only.
         // SUPER_ADMIN should not bypass ERP module access.
 
-        // Check if user has one of the required roles
-        if (!in_array($user->role, $roles)) {
+        // Check both old role column AND Spatie roles for backward compatibility
+        $hasAccess = false;
+        
+        foreach ($roles as $role) {
+            // Check old role column (case-insensitive, handles MANAGER, Manager, etc.)
+            if (strcasecmp($user->role, $role) === 0) {
+                \Log::debug('Access granted by old role column', ['role' => $role, 'user_role' => $user->role]);
+                $hasAccess = true;
+                break;
+            }
+            
+            // Also check common variations: FINANCE_STAFF vs Finance Staff
+            $roleVariations = [
+                $role,
+                strtoupper($role),
+                strtoupper(str_replace(' ', '_', $role)), // "Finance Staff" -> "FINANCE_STAFF"
+                str_replace('_', ' ', $role), // "FINANCE_STAFF" -> "Finance Staff"
+            ];
+            
+            foreach ($roleVariations as $variation) {
+                if (strcasecmp($user->role, $variation) === 0) {
+                    $hasAccess = true;
+                    break 2; // Break both loops
+                }
+            }
+            
+            // Check Spatie roles (if user has Spatie roles assigned)
+            if (method_exists($user, 'hasRole') && $user->hasRole($role)) {
+                $hasAccess = true;
+                break;
+            }
+        }
+
+        if (!$hasAccess) {
+            // Log the denial
+            \Log::debug('RoleMiddleware - ACCESS DENIED', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role_column' => $user->role,
+                'user_spatie_roles' => $user->getRoleNames()->toArray(),
+                'required_roles' => $roles,
+                'reason' => 'No matching role found',
+            ]);
+
             // If this is an Inertia request, redirect to the user's allowed module
             if ($request->header('X-Inertia')) {
-                $targetRoute = match ($user->role) {
-                    'FINANCE' => 'finance.index',
-                    'HR' => 'erp.hr',
-                    'CRM' => 'crm.dashboard',
-                    default => 'landing',
-                };
+                // Check both old role column and Spatie roles for redirect (case-insensitive)
+                $targetRoute = 'landing';
+                $userRole = strtoupper($user->role);
+                
+                if ($user->hasRole('Finance Staff') || $user->hasRole('Finance Manager') || in_array($userRole, ['FINANCE', 'FINANCE_STAFF', 'FINANCE_MANAGER'])) {
+                    $targetRoute = 'finance.index';
+                } elseif ($user->hasRole('HR') || $userRole === 'HR') {
+                    $targetRoute = 'erp.hr';
+                } elseif ($user->hasRole('CRM') || $userRole === 'CRM') {
+                    $targetRoute = 'crm.dashboard';
+                } elseif ($user->hasRole('Manager') || $userRole === 'MANAGER') {
+                    $targetRoute = 'erp.manager.dashboard';
+                } elseif ($user->hasRole('Staff') || $userRole === 'STAFF') {
+                    $targetRoute = 'erp.staff.dashboard';
+                }
 
                 return redirect()
                     ->route($targetRoute)

@@ -5,6 +5,7 @@ import { useFinanceApi } from "../../../hooks/useFinanceApi";
 import { useInvoices, usePostInvoice } from "../../../hooks/useFinanceQueries";
 import { InlineApprovalActions, getApprovalStatusBadge, ApprovalLimitInfo } from "./InlineApprovalUtils";
 import Swal from "sweetalert2";
+import { canApproveExpenses } from "../../../utils/permissions";
 
 // Loading Spinner Component
 const LoadingSpinner: React.FC<{ message?: string }> = ({ message = "Loading invoices..." }) => (
@@ -220,11 +221,11 @@ type TabFilter = "all" | "draft" | "posted" | "paid" | "overdue";
 const Invoice: React.FC = () => {
   const page = usePage();
   const user = page.props.auth?.user as any;
+  const auth = page.props.auth as any;
   const api = useFinanceApi();
 
   const canUserPost = () => {
-    if (!user) return false;
-    return String(user.role || "").toUpperCase() === "FINANCE_MANAGER";
+    return canApproveExpenses(auth);
   };
   
   const [selectedTab, setSelectedTab] = useState<TabFilter>("all");

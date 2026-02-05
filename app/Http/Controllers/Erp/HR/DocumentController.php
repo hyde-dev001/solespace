@@ -24,8 +24,8 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Only HR or shop_owner can view all documents
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -66,8 +66,8 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Only HR or shop_owner can upload documents
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -142,8 +142,8 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -161,8 +161,8 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -192,8 +192,8 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -237,15 +237,15 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Only HR or shop_owner can verify documents
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized document verification attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role,
+                'user_role' => $user->getRoleNames()->first(),
                 'document_id' => $id
             ]);
             return response()->json([
-                'error' => 'Unauthorized. Only HR or shop owners can verify documents.'
+                'error' => 'Unauthorized. Only Managers or users with HR permissions can verify documents.'
             ], 403);
         }
 
@@ -273,8 +273,8 @@ class DocumentController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

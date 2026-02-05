@@ -77,6 +77,15 @@ class HandleInertiaRequests extends Middleware
                     'role' => Auth::guard('user')->user()->role ?? null,
                     'force_password_change' => (bool) (Auth::guard('user')->user()->force_password_change ?? false),
                 ] : null,
+                
+                // Share permissions for all guards
+                'permissions' => Auth::guard('user')->check() 
+                    ? Auth::guard('user')->user()->getAllPermissions()->pluck('name')->toArray()
+                    : (Auth::guard('shop_owner')->check() 
+                        ? ['*'] // Shop owner has full access
+                        : (Auth::guard('super_admin')->check() 
+                            ? ['*'] // Super admin has full access
+                            : [])),
             ],
         ];
     }

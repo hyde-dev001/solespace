@@ -25,7 +25,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -85,8 +86,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Only HR or shop_owner can create performance reviews
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -199,7 +200,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -217,7 +219,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -265,7 +268,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -293,8 +297,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Allow HR and shop_owner to submit any review
-        $isAuthorized = in_array($user->role, ['HR', 'shop_owner']);
+        // Check if user is Manager or has any HR-related permissions
+        $isAuthorized = $user->hasRole('Manager') || $user->can('view-employees') || $user->can('view-attendance') || $user->can('view-payroll');
 
         $review = PerformanceReview::forShopOwner($user->shop_owner_id)
             ->with('employee')
@@ -351,7 +355,7 @@ class PerformanceController extends Controller
         // Audit logging
         \Log::info('Performance review submitted', [
             'submitter_id' => $user->id,
-            'submitter_role' => $user->role,
+            'submitter_role' => $user->getRoleNames()->first(),
             'review_id' => $id,
             'employee_id' => $review->employee_id,
             'reviewer_id' => $review->reviewer_id,
@@ -373,15 +377,15 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        // Security Check: Only HR or shop_owner can complete reviews
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             \Log::warning('Unauthorized performance review completion attempt', [
                 'user_id' => $user->id,
-                'user_role' => $user->role,
+                'user_role' => $user->getRoleNames()->first(),
                 'review_id' => $id
             ]);
             return response()->json([
-                'error' => 'Unauthorized. Only HR or shop owners can complete performance reviews.'
+                'error' => 'Unauthorized. Only Managers or users with HR permissions can complete performance reviews.'
             ], 403);
         }
 
@@ -405,7 +409,7 @@ class PerformanceController extends Controller
         // Audit logging
         \Log::info('Performance review completed', [
             'completer_id' => $user->id,
-            'completer_role' => $user->role,
+            'completer_role' => $user->getRoleNames()->first(),
             'review_id' => $id,
             'employee_id' => $review->employee_id
         ]);
@@ -423,7 +427,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -491,7 +496,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -515,7 +521,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if ($user->role !== 'HR') {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -578,7 +585,8 @@ class PerformanceController extends Controller
     {
         $user = Auth::guard('user')->user();
         
-        if (!in_array($user->role, ['HR', 'shop_owner'])) {
+        // Check if user is Manager or has any HR-related permissions
+        if (!$user->hasRole('Manager') && !$user->can('view-employees') && !$user->can('view-attendance') && !$user->can('view-payroll')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
